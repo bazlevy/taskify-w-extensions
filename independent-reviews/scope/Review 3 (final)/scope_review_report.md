@@ -1,0 +1,459 @@
+# Independent Scope Review Report — Personal Task Manager
+
+**Review ID:** R1-INITIAL-2026-10-22  
+**Review date:** 2026-10-22  
+**Reviewer role:** Independent Scope & Requirements Reviewer (R1)  
+**Source:** Original uploaded `spec.md` for initial findings; same canonical path reconciled and independently verified 2026-10-22, and approved through the separate human gate record in Section 12.  
+**Original baseline SHA-256:** `4504d3b74decb91756f7219bbbb62e5f351449ee4322c074ce72fd42e8ebc2fb`  
+**Step 3 reconciled spec SHA-256 (historical):** `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd` (Step 4 initial verification found two exceptions)
+**Approved Scope baseline SHA-256:** `53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e` (184 lines; independently verified in Section 11; explicitly approved 2026-10-22 in Section 12)  
+**Reviews/decisions assumed:** None. This is an initial independent review; no prior review artefacts or external approval records were relied upon.  
+**Source availability:** Original uploaded specification, authorised product-owner decisions in this conversation, and the reconciled canonical specification. Historical line references belong to the identified historical hashes; current line references in Section 11 belong to the corrected candidate hash.
+
+## 1. Executive determination
+
+**Current recommendation and decision: SCOPE APPROVED — AUTHORISED TO PROCEED TO SPEC KIT PLAN.** The reconciled `spec.md` was independently re-verified in Section 11 and then approved by the product owner on 2026-10-22 in a separate, consolidated, exact-version Scope gate decision (Section 12). The original Step 4 exceptions R1-006 and R1-011 were corrected and verified before approval. **Section 12 is the authoritative current gate/approval record; Section 11 is the authoritative verification record.** Earlier sections preserve the audit trail and historical, superseded gate snapshots.
+
+**Gate status:** `APPROVED` for `spec.md` SHA-256 `53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e` only. Authorised next phase: **Spec Kit Plan**. Final dispositions: eight `RESOLVED` findings (R1-001–007, R1-011), three `DEFERRED` findings (R1-008/009 to Functional Design, R1-010 to Test), zero `OPEN`. No findings are formally `RISK_ACCEPTED`. Previously documented limitations remain in force; no design/implementation decisions were pre-approved.
+
+**Important provenance caveat:** The specification contains nine purported clarification Q&As (lines 13–35). They are evidence of the *written draft*, but their author, respondent, decision authority and approval status cannot be independently verified from this file alone. Their original authorship/authority remains unverified. DEC-R1-007 confirms the substantive clarification outcomes that remain compatible with later decisions; DEC-R1-007-FINAL separately rejects unsupported SC-001–SC-003 thresholds and preserves the SC-004 persistence guarantee. Neither establishes original Q&A provenance. The original input at line 9 is solely “Build a simple personal task manager.”
+
+## 2. What was adequately defined in the original draft (historical baseline assessment)
+
+- **User and purpose:** A single individual managing their own personal tasks (lines 39–42, 106–112, 216–217).
+- **Core capability:** Create, view, edit, complete, reopen and explicitly confirm deletion of tasks (FR-001–FR-006), with tasks initially active and stable identities (lines 140–150, 172–173, 220–222).
+- **Task rules:** Three priority values; calendar-date rather than time-of-day due dates; past due dates accepted; completed tasks not overdue (FR-002, FR-011; lines 17–22, 33–35, 142, 159–161).
+- **Collection management:** Combined status/priority filters and filter restoration (FR-007, FR-012). Draft FR-013 defines a fixed due-date/priority/creation order, but DEC-R1-006 authorises user-selectable sorting and DEC-R1-006-P1 approves four methods (Due Date, Priority, Date Created, Title), and DEC-R1-006-P2 approves both directions for all four. DEC-R1-006-P3 approves Due Date (earliest first) as the initial default. Secondary ordering and preference restoration details are deferred to Functional Design under DEC-R1-PHASE-001; no further Scope approval on those details is required unless Design uncovers a material product trade-off.
+- **Durability intent:** Session-to-session persistence plus protection against overwriting unreadable saved data (FR-008, FR-014, SC-004).
+- **Draft exclusions now contested:** The original draft excludes accounts, sign-in, sharing, synchronisation and multi-user features (FR-010; lines 216–217). Approved DEC-R1-003 expressly adds cross-device task synchronisation, and DEC-R1-005 approves private accounts and sign-in, superseding the draft no-sync/no-account exclusions; specification reconciliation was subsequently performed at Step 3 (Section 9).
+- **Verification anchors:** Four prioritised user stories, acceptance scenarios, eight standalone ACs and four quantitative success criteria, subject to the findings below.
+
+These are meaningful strengths. Lack of a requirement for search, tagging, reminders, recurring tasks, collaboration, export or backup is **not** itself a defect in a deliberately simple first release.
+
+## 3. Review method and classification
+
+Assessed product definition, provenance/authority, boundary conditions, core data and lifecycle rules, representative use scenarios, security/privacy and non-functional constraints, acceptance and success criteria, and phase ownership. `EXPLICIT` means written in the available source, **not** necessarily authorised by a human; `IMPLICIT` means logically suggested but not fully specified; `PROPOSED` means a candidate rule or resolution not approved. Finding types indicate `MISSING`, `AMBIGUOUS`, `CONFLICTING`, `UNSUPPORTED`, or `RISK` and are separate from origin.
+
+**Severity:** HIGH = material ambiguity or product failure risk; MEDIUM = important but contained issue; LOW = limited downstream impact. **Approval relevance:** `BLOCKER` = must be resolved or explicitly risk-accepted by appropriate authority before the Scope gate; `NON-BLOCKER` = must be tracked with correct phase ownership, but does not independently prevent Scope approval. Severity does not determine phase ownership.
+
+## 4. Findings register
+
+### R1-001 — Mandatory task field policy is unsupported by the original request
+
+- **Evidence:** Original request only says “Build a simple personal task manager” (line 9). FR-001 requires non-empty title, description, priority and valid due date (lines 140–141); FR-004 propagates the rule to editing (lines 145–146). Assumption explicitly claims the four attributes were “described ... in the feature request” (lines 218–219), which is not supported by the visible input.
+- **Origin:** `PROPOSED` policy written as `EXPLICIT` draft requirement; **type:** `UNSUPPORTED`.
+- **Severity / owner / approval:** `HIGH` / `SCOPE` / `BLOCKER`.
+- **Impact:** The product cannot capture a task without a description or a date, a material workflow restriction. Design must not independently redefine required fields. Acceptance scenarios and outcomes depend on the rule.
+- **Resolution required:** Obtain an explicit decision on which of title, description, priority and due date are mandatory, including whether a required priority must be user-selected or may be defaulted. Reconcile FR-001/004, Task entity, create/edit acceptance scenarios, AC-002, SC-001 and assumption wording. Do not simply remove constraints on reviewer authority.
+- **Decision options:** A) retain all four mandatory; B) make title mandatory, description/due date optional, retain an explicit priority policy; C) another explicitly specified combination. **Recommendation:** consider B for low-friction capture, subject to the product owner's decision.
+- **Status:** `RESOLVED` — Step 4 verified the approved product rule in the reconciled baseline (`spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`); see Section 10. No additional Scope decision required.
+- **Decision DEC-R1-001 (2026-10-22, authorised by requesting product owner in this conversation):** **Option D approved**: **title is the only mandatory user-entered field**; description, priority and due date are optional on creation and editing. This supersedes the draft policy requiring all four fields. This decision is approved, not a reviewer proposal.
+- **Decision DEC-R1-001-P1 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved**: if priority is omitted when creating a task, the system assigns the effective priority **Medium**. Priority remains optional for the user to enter; the resulting task has one of the three permitted priority values (Low, Medium, High). If an existing priority is cleared during editing, the same Medium default applies. This defines the default; it does not make explicit priority selection mandatory. **Reconciliation and independent verification remain pending.**
+- **Decision DEC-R1-001-P2 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved:** when tasks are sorted by due date, tasks with no due date appear **after all dated tasks**, regardless of whether dated tasks are in ascending or descending order. An omitted due date remains absent; it must not be replaced by a fabricated date. This decision applies specifically to due-date-based sorts; it does not prescribe tie-breaking, sort direction, or other sort methods. **Reconciliation and independent verification remain pending.**
+- **Required reconciliation:** FR-001, FR-003, FR-004; Task entity; User Story 1 scenarios and validation; relevant reopen/edit and due-date acceptance scenarios, including AC-002; FR-011's overdue applicability; FR-013 sorting; SC-001; Assumptions. Preserve past-date acceptance and three-priority taxonomy unless separately amended. **At initial finding:** no amendment yet. **Now:** reconciled at Step 3 (Section 9); independent verification pending.
+
+### R1-002 — Target product platform and client environment are unspecified
+
+- **Evidence:** The spec describes “the application”, “session”, “device” and “local task list” (lines 106–123, 153–158, 216–217) without establishing whether it is a web app, installed desktop app, mobile app or which broad client environments are supported.
+- **Origin:** `PROPOSED` clarification from an omitted scope boundary; **type:** `MISSING`.
+- **Severity / owner / approval:** `HIGH` / `SCOPE` / `BLOCKER`.
+- **Impact:** Platform-dependent notions of sessions, user interaction, accessibility and persistence cannot be interpreted consistently without the product channel. This is a product constraint, not a request for the reviewer to choose a framework or architecture.
+- **Resolution required:** Identify intended platform(s) and minimum supported usage context for the first release, including whether offline use is promised or explicitly not promised if material. Leave exact frameworks, supported-version matrices and test devices to Design/Test unless business-critical.
+- **Options offered in the interactive clarification:** A) desktop-browser web application; B) desktop-and-mobile-browser web application; C) installed native application; D) multiple platforms. **Reviewer recommendation at clarification:** A, a desktop-browser web application. This recommendation was advisory only.
+- **Status:** `RESOLVED` — Step 4 verified the approved product rule in the reconciled baseline (`spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`); see Section 10. No additional Scope decision required.
+- **Decision DEC-R1-002 (2026-10-22, authorised by requesting product owner in this conversation):** **Option B approved**: the first release is a **web application accessible through desktop and mobile browsers**. This authorises both broad browser form factors, without authorising native desktop or mobile applications. Browser-specific version support, responsive interaction details and implementation technologies belong to downstream Design/Test unless a product-critical constraint requires further Scope clarification. No affirmative offline-use guarantee is created by this decision; offline support has not been authorised.
+- **Required reconciliation:** Introduce the first-release platform boundary in the product definition/assumptions and reflect it in relevant usability and persistence scenarios while incorporating approved cross-device task sharing under DEC-R1-003; the private-account/sign-in boundary approved under DEC-R1-005 must be reconciled. Identify any proposed accessibility or browser-compatibility constraints for proportional approval before Scope exit; do not invent framework, native-app or offline requirements. **At initial finding:** no amendment yet. **Now:** reconciled at Step 3 (Section 9); independent verification pending.
+
+### R1-003 — Persistence and isolation boundary conflicts with undefined “same user” semantics
+
+- **Evidence:** FR-008 promises state “for the same user on the same device” (lines 153–154), while FR-010 excludes sign-in/accounts/multi-user features (lines 157–158). Assumptions refer to one device and one “local task list” (lines 216–217). No rule identifies whether tasks are shared between browser profiles, browsers, OS accounts or private sessions, or what happens when local storage is cleared.
+- **Origin:** `IMPLICIT` single-user/locality intention with unresolved boundary; **type:** `AMBIGUOUS`.
+- **Severity / owner / approval:** `HIGH` / `SCOPE` / `BLOCKER`.
+- **Impact:** Distinct implementations could either expose the same task list or create separate task lists on one physical device and still claim compliance. The user's expectation of persistence and accessibility is therefore materially undefined.
+- **Resolution required:** Approve the observable persistence scope and account isolation boundary. Those are authorised by DEC-R1-003 and DEC-R1-005; reconcile FR-008, FR-010, SC-004 and assumptions. Detailed preference synchronisation, conflict handling and mechanisms are downstream rather than additional Scope approval gates.
+- **Decision options originally noted in the initial report:** A) one task list per browser profile on a device; B) OS-account/device-wide list; C) another specified boundary. The subsequent guided clarification explicitly offered A) separate list per browser profile, B) same-device cross-browser sharing, C) **shared task list across devices**, and D) another boundary. The approved option below refers to that guided clarification. **Initial reviewer recommendation:** prefer the simplest explicitly bounded behaviour; advisory only.
+- **Status:** `RESOLVED` — Step 4 verified the approved product rule in the reconciled baseline (`spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`); see Section 10. No additional Scope decision required.
+- **Decision DEC-R1-003 (2026-10-22, authorised by requesting product owner in this conversation):** **Option C approved** from the guided clarification: **the same user’s tasks must be accessible and synchronised across devices, including desktop and mobile browsers.** This authorises a cross-device task-list capability and supersedes the original local-only/no-synchronisation assumption. It does **not** independently authorise a particular sign-in method, user account model, remote data architecture, or cross-user sharing.
+- **Linked decision now authorised:** DEC-R1-005 Option A establishes private user accounts with sign-in. Signing in to the same account from different browsers, browser profiles or devices provides access to that account's single personal task list; signing in to another account must not expose the first user's tasks. A separate browser profile is not automatically linked unless the same user signs in. Sharing and collaboration remain out of scope. Detailed authentication and storage mechanisms and filter-preference synchronisation are downstream. R1-004 now prohibits inferred self-service reset authority and requires retry/support escalation while protecting existing saved data; no additional account-wide reset policy is needed at Scope. Coordinate with R1-008 for failed writes and synchronisation errors.
+- **Required reconciliation:** FR-008, FR-010, FR-012, FR-014 as affected; User Story 4 and its acceptance scenarios; relevant persistence and error scenarios; SC-004; Task/Filter data boundaries and Assumptions; preserve the approved product guarantee that the same account accesses a synchronised personal task list while deferring detailed consistency mechanisms, conflict resolution and failure flows to Design. **At initial finding:** no amendment yet. **Now:** reconciled at Step 3 (Section 9); independent verification pending.
+
+### R1-004 — Previously saved tasks fail to load: user recovery boundary and protection against data loss
+
+- **Evidence:** Draft FR-014 mandates preventing all task-data changes until loading succeeds and never overwriting unreadable data (lines 167–168), consistent with draft clarifications/edge cases (lines 30–32, 133–134). The original report explored a self-service data-reset exception without distinguishing a failed save from failure to retrieve previously saved tasks.
+- **Origin / finding type:** `EXPLICIT` protective rule with `PROPOSED` response policy; `RISK` / `AMBIGUOUS` failure-response boundary.
+- **Severity / owner / approval:** `HIGH` / `SCOPE` / `BLOCKER` **solely pending reconciliation and independent verification**; substantive policy choice is now authorised.
+- **Impact:** In an account-based cross-device product, failure to load previously saved data could reflect browser, network, sign-in, service or database problems. Repeated retries may not fix a backend problem; destructive user-facing reset could irreversibly damage recoverable shared data. A failed *new task save* is separately handled under R1-008 in Functional Design.
+- **Original decision DEC-R1-004 (2026-10-22):** The product owner approved Option B, permitting explicit user-authorised reset of affected unreadable saved data after warning/confirmation. **Historical approval retained for audit but SUPERSEDED by DEC-R1-004-FINAL below. This capability is no longer authorised.**
+- **Superseding decision DEC-R1-004-FINAL (2026-10-22, product-owner-approved Option A):** If previously saved tasks cannot be loaded, the application must **(1)** inform the user that tasks could not be loaded, **(2)** provide an opportunity to retry, **(3)** direct the user to support if the problem persists, and **(4)** prevent changes that could overwrite or destroy existing saved task data until the loading issue is resolved. **No user-facing self-service data reset is required or authorised by this decision.** The former DEC-R1-004 Option B reset/data-loss permission is explicitly superseded.
+- **Phase ownership:** These four product-level outcomes belong to Scope. Exact error messaging, retry interactions, failure-state UI and recovery flow belong to Functional Design (R2); diagnosis and backend/data restoration mechanisms belong to Technical Design and Operations. This does not prescribe a backup architecture or require the user to diagnose backend faults.
+- **Status:** `RESOLVED` — Step 4 verified the approved product rule in the reconciled baseline (`spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`); see Section 10. No additional Scope decision required.
+- **Required reconciliation:** FR-014, FR-009 as applicable, saved-data clarification and edge case, User Story 4/acceptance scenarios, AC-008 and any revised synchronisation assumptions. Preserve separation from failed-write behaviour in R1-008. Link changed text to DEC-R1-004-FINAL and independently verify; **spec change / verification: none yet**.
+
+### R1-005 — Task-data privacy and access expectations are not established
+
+- **Evidence:** Tasks are personal; the draft excludes accounts/sign-in and multi-user support (lines 39–42, 157–158, 216–217), without specifying data location, provider access or who can read a list. DEC-R1-003 now authorises cross-device task synchronisation, making remote transfer/access policy material. The draft exclusions cannot be treated as unqualified approved boundaries.
+- **Origin:** `PROPOSED` scope boundary; **type:** `MISSING` / `RISK`.
+- **Severity / owner / approval:** `MEDIUM` / `SCOPE` / `BLOCKER` pending a proportionate statement of intended data handling.
+- **Impact:** “Personal” does not establish confidentiality or identity separation. Cross-device sharing introduces a material risk of accidental list exposure or loss of access if identity/authorisation boundaries are undefined. No specific regulatory standard or technical protection mechanism is assumed.
+- **Resolution required:** Specify product-level permitted task-data transmission/storage, who may access a synced list, and whether app-level identity verification is required, coordinated with R1-003. Do not dictate particular encryption, account framework, database or cloud provider.
+- **Initial-report options, now affected by DEC-R1-003:** A) local-only data (no longer sufficient as a complete guarantee for approved cross-device synchronisation without further explanation); B) explicitly permitted remote transfer/storage with defined access boundaries; C) another authorised data-handling model that satisfies cross-device access. **Recommendation:** approve minimally sufficient privacy and access guarantees in conjunction with the pending R1-003 identity decision; do not reimpose local-only storage by reviewer preference.
+- **Status:** `RESOLVED` — Step 4 verified the approved product rule in the reconciled baseline (`spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`); see Section 10. No additional Scope decision required.
+- **Decision DEC-R1-005 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved** from the guided clarification: **private account with sign-in**. Each user has a personal task list accessible from desktop and mobile browsers when signed in to the same account. Remote transfer, storage and synchronisation of that user's task data are permitted. Other users must not be permitted to access that list. Task-list sharing and collaboration remain outside the first release. This expressly supersedes the draft exclusion of accounts and sign-in in FR-010, but does not authorise particular authentication methods, vendors, infrastructure or unrelated multi-user collaboration features.
+- **Resulting product boundary:** Different devices or browser profiles signed in to the **same** account access the same user's task list; users signed in to different accounts do not share task lists. Sign-in is a condition of access to the synchronised private task list. Detailed sign-in/recovery workflows, account protections and provider implementation mechanisms belong downstream unless a further material product choice emerges.
+- **Required reconciliation:** Rework FR-008 and FR-010, relevant User Story 4 acceptance scenarios, Task/Filter access boundaries, Assumptions and pertinent privacy/security product constraints. Leave filter-preference synchronisation to Functional Design without presuming an unapproved cross-device guarantee; coordinate the now-approved failed-load safeguards under DEC-R1-004-FINAL. **At initial finding:** no amendment yet. **Now:** reconciled at Step 3 (Section 9); independent verification pending.
+
+### R1-006 — Clarification text suggests a user-selected sort capability not defined elsewhere
+
+- **Evidence:** A clarification is phrased “In the absence of a user-selected sort option” (lines 25–26), whereas FR-013 unconditionally specifies one fixed sort order (lines 164–166). No requirement or scenario describes selecting a sort option.
+- **Origin:** `EXPLICIT` source wording, scope inference `PROPOSED`; **type:** `AMBIGUOUS` (not a proven direct contradiction).
+- **Severity / owner / approval:** `MEDIUM` / `SCOPE` / `BLOCKER` pending reconciliation of the *already approved capability*; no remaining sorting-detail questions independently block Scope approval.
+- **Impact:** Without an agreed list of sorting methods and a default, Design would have to make material product decisions. Optional priority and due dates also affect sorting semantics.
+- **Resolution required:** Reconcile the authorised sorting capability, four methods, reversible directions, initial default, effective Medium priority and undated-last rule. Under DEC-R1-PHASE-001, secondary ordering, stable ties and restoration/synchronisation of the selected sort are Functional Design details. R2 must remain consistent with all approved product rules and escalate any material product-policy trade-off.
+- **Status:** `OPEN` — Step 4 found a contradictory universal same-date tie instruction in FR-013 against selectable Priority/Title/Date Created sorts; see Section 10. An editorial scoping correction must be reconciled and re-verified. Other sorting behaviour details remain deferred to R2.
+- **Decision DEC-R1-006 (2026-10-22, authorised by requesting product owner in this conversation):** **Option B approved**: **first-release users can select how their task list is sorted**. This supersedes an interpretation of FR-013 as the only available fixed order.
+- **Decision DEC-R1-006-P1 (2026-10-22, authorised by requesting product owner in this conversation):** **Option C approved**: the exact selectable sort methods for the first release are **Due Date, Priority, Date Created, and Title**. Approval covers these four methods only; the direction of each method is authorised separately under DEC-R1-006-P2. At the time of DEC-R1-006-P1, the initial default, secondary/tie-breaking rules and sort-preference persistence were undecided; the initial default was subsequently approved under DEC-R1-006-P3. The undated-last rule under DEC-R1-001-P2 applies when sorting by Due Date. **At initial finding:** no amendment yet. **Now:** reconciled at Step 3 (Section 9); independent verification pending.
+- **Decision DEC-R1-006-P2 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved:** each of the four methods must support **both directions**: Due Date (earliest first / latest first); Priority (High → Low / Low → High); Date Created (newest first / oldest first); Title (A → Z / Z → A). This authorises reversing the selected method but **does not** settle the initial default method/direction, the relative order of tied tasks or preservation of sorting preferences across sessions/devices. **Constraint carried forward:** under DEC-R1-001-P2, tasks with no due date remain last in **both** Due Date directions. **Status:** authorised and reconciled into `spec.md` at Step 3; independent verification pending.
+- **Decision DEC-R1-006-P3 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved:** on first use, before a user selects an alternative sort, the task list defaults to **Due Date — earliest first**. Per DEC-R1-001-P2, tasks without a due date appear last. This is an **initial** default only; whether a selected sort method/direction is restored between sessions or synchronised across devices remains undecided. Secondary ordering for tied values remains undecided except that the original same-due-date rule is retained as a documented clarification outcome under DEC-R1-007, subsequently incorporated alongside selectable sorts at Step 3. **Status:** authorised and reconciled into `spec.md` at Step 3; independent verification pending.
+- **Decision DEC-R1-PHASE-001 (2026-10-22, authorised by requesting product owner after questioning excessive sorting detail):** Stop further sorting-related Scope clarification. Preserve all decisions already approved under DEC-R1-001-P1/P2 and DEC-R1-006/P1/P2/P3. **Disposition of proposed DEC-R1-006-P4:** no tie-break option was selected; the proposed Scope clarification is **DEFERRED to Functional Design (R2)**, including consistent deterministic handling of tied values. Restoration/synchronisation of user-selected sort preferences is likewise delegated to R2 without a new Scope guarantee. The draft same-due-date rule already confirmed under DEC-R1-007 remains part of the authorised baseline unless superseded by a separate authorised change. No material product choice may be invented downstream. This **does not** resolve the parent finding R1-006; reconciliation and independent verification remain pending.
+
+
+### R1-007 — Clarifications and numerical targets lack independently verifiable decision authority
+
+- **Evidence:** The original product input is a single sentence (line 9). Nine clarification answers are written without respondent/approver information (lines 13–35). SC-001–SC-003 contain specific numeric targets (lines 206–210) without stated source or confirmation. No approval record or versioned gate decision is provided.
+- **Origin:** `EXPLICIT` document text with unverified authority; **type:** `UNSUPPORTED` provenance / `MISSING` approval.
+- **Severity / owner / approval:** `MEDIUM` / `SCOPE` / `BLOCKER` as a governance prerequisite to Scope exit, not necessarily a requirement rewrite.
+- **Impact:** A polished generated draft could be mistaken for an approved product baseline. Numerical targets may be proposed rather than product-owner commitments.
+- **Resolution required:** Have an authorised human confirm or correct the substantive recorded clarification outcomes and accept/revise success targets as part of one consolidated final Scope approval. Record identity/role, exact approved spec version, date and any residual risk acceptances. Do not require a separate sign-off for every trivial statement if a reliable consolidated approval covers them.
+- **Status:** `RESOLVED` — Step 4 verified the approved product rule in the reconciled baseline (`spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`); see Section 10. No additional Scope decision required.
+- **Decision DEC-R1-007 (2026-10-22, authorised by requesting product owner in this conversation):** **Option B approved**: confirm substantive recorded clarification outcomes *insofar as they remain consistent with newer authorised decisions*; keep all four numerical success targets SC-001–SC-004 as `PROPOSED`, requiring a separate approval/revision decision before the final Scope gate. This confirms the retained product rules going forward; it does **not** establish that the nine historical Q&As were originally human-approved or that their provenance was correct.
+- **Retained clarification coverage:** Reopening completed tasks; calendar-date-only due dates; explicitly confirmed permanent deletion; accepting past due dates and active-only overdue labels; restoring selected status/priority filters between sessions; the earlier due-date/priority/creation ordering as a documented *candidate default* at the time of DEC-R1-007 (subsequently set to Due Date — earliest first under DEC-R1-006-P3, with original same-date tie rules still recorded), subject to the omitted-date/priority rules from DEC-R1-001; and protection against overwriting unreadable data under the later DEC-R1-004-FINAL; its earlier reset exception was superseded. No conflict is silently resolved by this confirmation.
+- **Decision DEC-R1-007-FINAL (2026-10-22, expressly approved Option B by the product owner):** Retain the fundamental **SC-004 successfully-saved task data persistence and correct cross-device availability guarantee**, revised for private accounts and synchronisation, without an unsubstantiated numeric claim. Reject and remove active numeric thresholds SC-001 (60 seconds), SC-002 (2 seconds for 95% of 1,000-task filter attempts) and SC-003 (90% unaided usability). Keep core create/filter capabilities and retain performance/usability as downstream quality considerations, not invented numeric Scope commitments. This supersedes the earlier provisional status of SC-001–SC-004 numeric targets; historical targets remain here as audit evidence. **Spec change:** reconciled `spec.md` Success Criteria, FR-008 and User Story 4. **Verification:** pending Step 4. Consolidated human approval remains separate.
+
+### R1-008 — User-visible outcome of a failed write is not specified
+
+- **Evidence:** FR-009 promises feedback for failed task changes (lines 155–156), FR-008 persistence (lines 153–154) and SC-004 complete restoration of “successfully saved” changes (lines 211–212). The draft does not specify whether an unsuccessfully persisted edit can appear committed in the UI or what the user is told about its durability.
+- **Origin:** `IMPLICIT` reliability guarantee; **type:** `AMBIGUOUS` / `RISK`.
+- **Severity / owner / approval:** `HIGH` / `FUNCTIONAL_DESIGN` / `NON-BLOCKER` provided no stronger product-level data guarantee is requested.
+- **Impact:** A user could believe a change has saved when it has not, even though error feedback exists in general terms.
+- **Resolution required:** Functional Design must define consistent success/failure and UI-state behaviour for create, edit, complete/reopen and delete when persistence fails; test against the product-level guarantee that acknowledged successful saves survive session restart. Escalate to Scope only if the design exposes a new material product policy or trade-off.
+- **Status:** `DEFERRED` — authorised downstream disposition; not a Scope blocker. R2 verification and closure remain outstanding.
+- **Decision DEC-R1-008 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved**: retain FR-008/FR-009 and the current persistence/error-feedback intent; do **not** add a new Scope-level guarantee solely for this finding. Functional Design (R2) must define user-visible state, save success/failure feedback and retry/recovery interactions for task creation, editing, completion/reopening and deletion, including cross-device synchronisation failures. Escalate a material new product rule to the authorised owner rather than infer it. No implementation or UI design was approved by this decision.
+- **Handoff / verification:** Carry `R1-008` and `DEC-R1-008` into the R2 review trace; verify that the functional design covers persistence failure outcomes consistently without falsely representing a failed write as confirmed saved. **Specification amendment:** none required solely by this disposition. **R2 verification:** pending.
+
+### R1-009 — “Current calendar date” needs a consistent reference for overdue display
+
+- **Evidence:** FR-011 and AC-004 use “past” and “current calendar date” (lines 159–161, 187–190) while due dates have no time component (lines 17–18). No reference calendar context is identified.
+- **Origin:** `IMPLICIT`; **type:** `AMBIGUOUS`.
+- **Severity / owner / approval:** `MEDIUM` / `FUNCTIONAL_DESIGN` / `NON-BLOCKER`.
+- **Impact:** Overdue flags could differ around midnight or device time-zone changes.
+- **Resolution required:** Define an understandable calendar-date comparison rule in Functional Design and trace it to AC-004; escalate only if timezone behaviour creates an actual product-level trade-off. No precise timestamp or scheduling mechanism is required in Scope.
+- **Status:** `DEFERRED` — explicitly authorised downstream disposition. Not a Scope blocker; Functional Design verification remains outstanding.
+- **Decision DEC-R1-009 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved**: retain existing calendar-date-only and overdue product requirements (FR-011 and AC-004), without adding a Scope-level time-zone policy. Functional Design (R2) will define a consistent and understandable rule for determining the relevant current calendar date, including boundary and cross-time-zone scenarios. Escalate if competing alternatives create a material product-policy trade-off requiring human approval. No particular comparison rule, time zone or mechanism is authorised by this decision.
+- **Handoff / verification:** Carry `R1-009` and `DEC-R1-009` into R2 Functional Design. Verify that the selected comparison rule is coherent and testable against FR-011/AC-004 and that any escalated Scope decision is explicitly authorised. **Specification amendment:** none required solely by this disposition. **R2 verification:** pending.
+
+### R1-010 — Success criteria need test-population and environment definitions
+
+- **Evidence:** SC-001 uses a 60-second task-creation threshold; SC-002 uses 1,000 tasks, 2 seconds and 95%; SC-003 uses 90% of usability participants (lines 206–210). Test devices, timing endpoints, sample characteristics and minimum valid sample sizes are unspecified.
+- **Origin:** `EXPLICIT` numerical targets with incomplete test operationalisation; **type:** `AMBIGUOUS`.
+- **Severity / owner / approval:** `MEDIUM` / `TEST` / `NON-BLOCKER`, after numerical targets are confirmed under R1-007.
+- **Impact:** Teams could report inconsistent pass/fail results against superficially quantitative criteria.
+- **Resolution required:** Define representative task data, start/stop events, sample and device/browser environment, repeatability and reporting conventions during test planning. Do not inject detailed test protocols into Scope.
+- **Status:** `DEFERRED` — authorised downstream disposition, not a Scope blocker. Verification in Test is outstanding.
+- **Decision DEC-R1-010 (2026-10-22, authorised by requesting product owner in this conversation):** **Option A approved**: defer detailed success-criteria test methodology, including measurement start/stop events, representative users, sample sizes, data sets, browser/device environments and reporting conventions, to the Test phase. This authorises **only** Test ownership of measurement methodology. SC-001–SC-003 numeric targets have since been rejected under DEC-R1-007-FINAL, and SC-004 retained as a qualitative correctness and persistence guarantee; Test will operationalise only active approved criteria.
+- **Handoff / verification:** Carry `R1-010` and `DEC-R1-010` into downstream Test planning; operationalise and independently verify retained SC-004 and other approved requirements, not withdrawn SC-001–SC-003 targets. **Specification amendment:** none required solely by this disposition. **Test verification:** pending.
+
+## 5. Original requirements coverage and consistency map (historical assessment)
+
+| Requirement(s) | Product purpose / scenario | Assessment | Related finding(s) |
+|---|---|---|---|
+| FR-001–FR-004 (original) | Create, view and edit task attributes | Original mandatory-field draft was superseded by approved Option D and revised at Step 3; verification pending | R1-001 |
+| FR-005 | Complete/reopen task | Explicit and coherent; completed edits permitted by FR-004's “existing task” wording, not contradicted by an active-task example | R1-008 (failed transition writes only) |
+| FR-006 | Confirmed permanent deletion | Clear as app-visible deletion/no restore; avoid inferring secure physical erasure | R1-008 (failed deletion writes only) |
+| FR-007 | Status + priority filtering | Coherent and directly testable | None material |
+| FR-008, FR-010 | Persistence, identity and account exclusions | Approved cross-device sharing and private accounts/sign-in supersede original no-sync/no-account assumptions; draft conflicts remain to reconcile | R1-002, R1-003, R1-005, R1-008 |
+| FR-009 | Error feedback | Intent clear; failed-operation presentation deferred | R1-008 |
+| FR-011 | Past dates, overdue active tasks | Coherent product rule; calendar context deferred | R1-009 |
+| FR-012 | Persist selected filters | Between-session restoration defined; details of preference synchronisation across devices are deferred to Functional Design; FR-012's between-session restoration remains approved | R1-003 |
+| FR-013 | Draft fixed due date, then priority, then creation order | Now conflicts with DEC-R1-006 authorising user-selectable sorts; DEC-R1-006-P1 approves Due Date, Priority, Date Created and Title, with both directions approved by DEC-R1-006-P2; initial default is Due Date — earliest first (DEC-R1-006-P3); secondary ties and sort preference restoration are handed to Functional Design, not left as Scope approval blockers. DEC-R1-001-P1 supplies Medium as the effective priority if omitted/cleared. DEC-R1-001-P2 places undated tasks last in any due-date sort, in both directions. | R1-001, R1-006 |
+| FR-014 | Protect unreadable saved data | DEC-R1-004-FINAL establishes failed-load notification, retry, support escalation and data protection; update needed | R1-004 |
+| AC-001–AC-008 | Scenarios for reopen, date format, deletion, overdue, filters, ordering, load error | Trace to FRs; mainly selective rather than exhaustive; no detailed test cases required at Scope | R1-001, R1-003, R1-004, R1-009 |
+| SC-001–SC-004 (original) | Usability, performance and persistence | Original draft numeric targets are historical evidence; active reconciled SC-004 retains saved-data guarantee without numeric threshold; SC-001–SC-003 thresholds rejected | R1-007, R1-010 |
+
+**Not counted as defects:** Optional features such as reminders/search/export/backup; full detailed wireflows; database schemas, cryptography, code architecture, exact test scripts; and rare timestamp tie-breaking. Private accounts and sign-in are now expressly authorised by DEC-R1-005; no implementation mechanism is prescribed.
+
+## 6. Original scenario analysis and subsequent decisions (historical assessment)
+
+| Scenario | Current documentary response | Remaining consequence / review treatment |
+|---|---|---|
+| User captures a task with only a title | Initial FR-001 rejects it; approved Option D would permit it after reconciliation | R1-001; DEC-R1-001-P1 approves Medium default priority; DEC-R1-001-P2 places undated tasks last in due-date sorts |
+| User opens the task manager in a second browser profile on the same physical device | DEC-R1-005 establishes that signing in to the same account provides access to the same list; draft still needs reconciliation | R1-003/R1-005; reconcile approved account-level access boundary |
+| User opens the task manager on a different device | Draft excludes sync but approved DEC-R1-003 requires the same task list to be accessible and synchronised | R1-003/R1-005; replace conflicting assumptions with approved account/sign-in and access policies |
+| Previously saved tasks cannot load, including persistent backend fault | Show failure, allow retry, direct to support if persistent; preserve existing saved data, without self-service reset | R1-004; decision DEC-R1-004-FINAL, reconcile FR-014 and acceptance scenarios |
+| A saved change cannot be persisted but UI responds | FR-009 requires clear feedback; visible and retained state unspecified | R1-008; Functional Design |
+| An active task becomes overdue at midnight or after a time-zone change | Overdue uses “current calendar date” | R1-009; Functional Design |
+| A user has multiple completed and active tasks and changes filters | FR-007 and FR-012 specify matching and restoration | Sufficient for Scope |
+
+## 7. Product-owner decision register (historical requests and later dispositions)
+
+The initial reviewer requests and their subsequent product-owner decisions are recorded below. Reviewer recommendations were advisory; only recorded human decisions authorise amendments. Current Step 3 state is in Section 9.
+
+| Decision ID | Finding | Required choice | Recommended disposition / trade-off |
+|---|---|---|---|
+| DEC-R1-001 | R1-001 | **DECIDED:** Option D — title only mandatory; description, priority and due date optional. **DEC-R1-001-P1 DECIDED:** Option A — Medium effective priority when omitted on creation or cleared in editing. **DEC-R1-001-P2 DECIDED:** Option A — undated tasks last in either ascending or descending due-date sorting. | Approved by product owner 2026-10-22; reconcile and independently verify before closing finding. |
+| DEC-R1-002 | R1-002 | **DECIDED:** Option B — web application for both desktop and mobile browsers; native apps not in initial scope. | Approved by product owner 2026-10-22; reconcile and independently verify before closing finding. Offline operation not promised. |
+| DEC-R1-003 | R1-003 | **DECIDED:** Option C — shared/synchronised task list across devices; DEC-R1-005 Option A supplies the private-account/sign-in and per-user isolation rule. **PENDING:** reconciliation/verification; failed-load data protection and support escalation authorised under DEC-R1-004-FINAL. Filter preference synchronisation is a Functional Design detail. | Approved by product owner 2026-10-22; existing no-sync/no-account assumptions cannot remain unexamined; reconcile and verify. |
+| DEC-R1-004 | R1-004 | **SUPERSEDED:** Earlier Option B authorised a user-facing reset of unreadable data. | Historical decision retained for audit; subsequently replaced by DEC-R1-004-FINAL; do not implement the reset capability. |
+| DEC-R1-004-FINAL | R1-004 | **DECIDED:** Option A — loading failure informs user, permits retry, directs persistent failures to support, protects existing saved data against overwrite/destruction; no self-service data-reset feature authorised. | Explicit product-owner approval 2026-10-22, superseding DEC-R1-004 Option B. Reconcile FR-014 and related scenarios; independently verify. |
+| DEC-R1-005 | R1-005 | **DECIDED:** Option A — private user accounts with sign-in, permitted remote data storage/synchronisation, account-isolated task lists; no sharing/collaboration. | Approved 2026-10-22; supersedes the draft no-accounts/no-sign-in exclusion; reconcile and independently verify. |
+| DEC-R1-006 | R1-006 | **DECIDED:** Option B — user-selectable sorting in first release. **DEC-R1-006-P1 DECIDED:** Option C — exactly four selectable methods: Due Date, Priority, Date Created and Title. **DEC-R1-006-P2 DECIDED:** Option A — both directions for all four methods. **DEC-R1-006-P3 DECIDED:** Option A — initial default Due Date, earliest first. **DEFERRED to R2:** tie-breaking and persistence of selection; undated tasks are last for due-date sorts (DEC-R1-001-P2) and omitted priority defaults to Medium (DEC-R1-001-P1). | Approved by product owner 2026-10-22; reconcile and independently verify before closing finding. |
+| DEC-R1-007 / DEC-R1-007-FINAL | R1-007 | **DECIDED:** Confirm surviving clarifications; Option B final decision removes SC-001–SC-003 numeric targets and retains the SC-004 persistence/cross-device correctness guarantee without the numeric claim. | Product owner approved 2026-10-22; authored into the reconciled spec. Historical Q&A authorship remains unverified. Step 4 and final version-specific Scope approval still required. |
+| DEC-R1-008 | R1-008 | **DECIDED:** Option A — defer detailed failed-write feedback and UI-state behaviour to Functional Design (R2). | Approved by product owner 2026-10-22; keep existing Scope reliability intent; R2 verification outstanding. |
+| DEC-R1-009 | R1-009 | **DECIDED:** Option A — defer precise overdue calendar-date reference and time-zone interpretation to Functional Design (R2). | Approved by product owner 2026-10-22. Retain FR-011/AC-004 Scope intent; R2 must determine an understandable, testable rule, and escalate material product-policy trade-offs. No Scope amendment required solely for this finding. |
+| DEC-R1-010 | R1-010 | **DECIDED:** Option A — defer detailed approved-success-outcome test methodology to Test. | Approved 2026-10-22. Numeric SC-001–SC-003 were rejected; Test operationalises retained SC-004 and other approved requirements, without restoring those targets. |
+| DEC-R1-011 | R1-011 | **DECIDED:** Option A — first-time users can self-register a private account without invitation or administrator provisioning. | Explicit approval 2026-10-22 following first Step 4 review; authorises FR-016, AC-012 and linked boundaries/stories. Detailed registration/authentication mechanics belong downstream. |
+
+**Historical Step 3 snapshot (superseded by Section 11):** R1-001 through R1-007 were `OPEN` pending independent verification. R1-008 and R1-009 were `DEFERRED` to Functional Design and R1-010 to Test. Sorting ties and preference synchronisation remain downstream under DEC-R1-PHASE-001. The final Scope approval gate remains closed.
+
+## 7A. Scope/Design boundary correction — 2026-10-22
+
+**Source of authority:** During this review the product owner challenged why sorting was consuming so much Scope-review time. The reviewer acknowledged that it was treating ordinary functional-design details as separate Scope approval decisions. The product owner explicitly agreed with stopping the sorting clarifications, deferring remaining sorting details, reassessing open findings and tightening the R1 decision threshold. This is recorded as **DEC-R1-PHASE-001**; it is a review-process decision, not an amendment to `spec.md`.
+
+**Principle adopted:** Scope establishes the product's outcomes, capabilities, material business rules, user-visible guarantees, constraints, exclusions and boundaries. Functional Design determines detailed interactions, ordering edge cases, UI states and failure/recovery flows *within* those approved boundaries. Escalate only if Design would otherwise have to invent a fundamental product decision or accept a material new trade-off. Do not equate an unspecified behavioural detail or high severity with a Scope blocker. Preserve already-approved product decisions; do not revoke them by reclassification.
+
+**Reassessment of open parent findings:**
+
+| Finding | Reassessed Scope treatment | Further human Scope choice? |
+|---|---|---|
+| R1-001 | Title-only mandatory, Medium default and undated-last policy approved; reconcile specification | No |
+| R1-002 | Desktop and mobile browser web application approved; reconcile specification | No |
+| R1-003 | Cross-device task synchronisation approved and private account identity approved; details of cross-device filter preferences and synchronisation mechanics to R2/R3 | No |
+| R1-004 | Superseding policy DEC-R1-004-FINAL approved: failed-load error, retry, support for persistent failures and saved-data protection; earlier reset policy withdrawn | **No**; reconcile/verify |
+| R1-005 | Private sign-in/account isolation/no sharing approved; reconcile specification | No |
+| R1-006 | Four sorts, both directions, initial default approved; preserve prior decisions and hand secondary ordering, tie-breaks and sort-preference restoration to R2 | No |
+| R1-007 | DEC-R1-007-FINAL rejects SC-001–SC-003 numeric targets, retains updated SC-004 guarantee; reconciled spec requires verification | No |
+
+**Downstream item DEC-R1-006-P4:** Originally presented as an unselected choice about secondary sorting. No approval was given for any proposed tie-breaking policy. It is no longer an outstanding Scope decision. R2 should specify a stable, predictable ordering consistent with the already confirmed same-due-date priority/creation rule and the other approved sort capabilities; if it finds those constraints mutually incompatible, escalate the conflict rather than inventing a change.
+
+**Reusable R1 reviewer instruction (proposed for integration into the reviewer's operating instructions, not automatically installed):**
+
+> Before raising a clarification or gate blocker, ask: would leaving this unresolved require Design to invent a fundamental product capability, material business rule, user-visible guarantee, constraint, exclusion or boundary? If not, assign it to Functional Design, Technical Design or Test with clear inherited constraints and verification criteria. Do not multiply trivial choices into separate human approvals. Maintain stable finding IDs and preserve explicitly approved decisions. Severity is independent of phase ownership and gate relevance.
+
+**No authorisation implied:** This process correction did not itself approve `spec.md` or entry to Spec Kit Plan. DEC-R1-004-FINAL and DEC-R1-007-FINAL were separately approved afterwards; the consolidated version-specific Scope gate is still outstanding.
+
+## 8. Exit conditions and audit trail
+
+### Minimum actions to qualify for Scope exit
+
+1. Apply R1-001's authorised Option D, Medium default under DEC-R1-001-P1 and undated-last-in-due-date-sort rule under DEC-R1-001-P2; reconcile approved R1-002 Option B, DEC-R1-003 Option C (cross-device synchronisation) and DEC-R1-005 Option A (private accounts/sign-in and account isolation); apply superseding DEC-R1-004-FINAL (failed-load error/retry/support and protection of existing data, with no self-service reset); and reconcile the four approved R1-006 sort methods and their bidirectional ordering under DEC-R1-006-P2; apply the approved initial default of Due Date — earliest first (DEC-R1-006-P3), and delegate tied-value sorting and sorting preference behaviour to R2 without adding unapproved product guarantees.
+2. Apply DEC-R1-007-FINAL: reject the unapproved SC-001–SC-003 numerical thresholds, retain the successfully-saved SC-004 guarantee updated for cross-device account use, and identify the final Scope approver.
+3. Have the responsible spec author make only authorised changes to canonical `spec.md`; link each issue to the decision and changed requirements/acceptance criteria/assumptions.
+4. Independently verify the amended file against decisions, contradictions, edge cases and regressions, retaining issue IDs. Disposition each finding as `RESOLVED`, `RISK_ACCEPTED`, `DEFERRED` or `PROPOSAL_REJECTED` with authority and rationale; leave anything else `OPEN`.
+5. Carry authorised `DEFERRED` findings R1-008 and R1-009 to Functional Design (R2), and R1-010 to Test. Their severity does not automatically block Scope. No numeric SC-001–SC-003 threshold may be reinstated without new product-owner approval.
+6. Present the exact reconciled baseline, accepted residual risks and all deferrals for **one consolidated explicit human Scope approval**. Record approver, decision, date and exact `spec.md` version/hash; only then recommend progression to Spec Kit Plan.
+
+### Audit record at end of first Step 4 verification (historical; superseded by Section 11)
+
+| Item | Current state |
+|---|---|
+| Baseline | Uploaded `spec.md` SHA-256 shown above |
+| Review issues | R1-001 through R1-010 created |
+| Decisions | DEC-R1-001 Option D (title only mandatory), DEC-R1-002 Option B (desktop-and-mobile-browser web app), DEC-R1-003 Option C (cross-device task synchronisation), DEC-R1-004 Option B (historical, **SUPERSEDED** by DEC-R1-004-FINAL Option A: saved-data load error/retry/support and protection against data destruction, no user-facing reset), DEC-R1-005 Option A (private accounts/sign-in and account-isolated remotely synchronised task lists), DEC-R1-006 Option B (user-selectable sort controls), and DEC-R1-007 Option B (retained clarifications confirmed; success targets provisional) approved on 2026-10-22. DEC-R1-001-P1 Option A (effective Medium priority when omitted on creation or cleared in editing) was separately approved on 2026-10-22. DEC-R1-001-P2 Option A (undated tasks last under either due-date sort direction) was also approved on 2026-10-22. DEC-R1-006-P1 Option C (the four selectable methods Due Date, Priority, Date Created and Title), DEC-R1-006-P2 Option A (both directions for each method), and DEC-R1-006-P3 Option A (initial default Due Date — earliest first) were approved on 2026-10-22. DEC-R1-007-FINAL Option B subsequently resolved the last numerical-target decision; R1-004 was authorised under DEC-R1-004-FINAL. Cross-device filter/sort preference details and sorting tie-breaks are deferred to R2 by DEC-R1-PHASE-001. DEC-R1-008 Option A authorises deferral of failed-write UI behaviour to Functional Design (R2), without adding a new Scope-level guarantee. DEC-R1-009 Option A authorises deferral of overdue date-reference interpretation to Functional Design (R2), without adding a Scope-level time-zone rule. DEC-R1-010 Option A authorises deferral of detailed success-criteria measurement methodology to Test; DEC-R1-007-FINAL separately rejects SC-001–SC-003 numeric targets and retains revised SC-004. |
+| Specification amendments | Step 3 authorised reconciliation applied to `/mnt/data/spec.md` on 2026-10-22; exact hash and trace in Section 9. |
+| Independent verification after amendment | **First Step 4 pass completed with exceptions (historical); Section 11 documents correction and re-verification.** |
+| Approved risk acceptances | None |
+| Finding dispositions | **Historical initial Step 4 (Section 10) snapshot, superseded by Section 11:** `RESOLVED` R1-001–005/R1-007; `OPEN` R1-006/R1-011; `DEFERRED` R1-008–010. No accepted risks. |
+| Downstream handoffs | R1-008, R1-009, sort tie-breaking and preference behaviour under DEC-R1-PHASE-001, and filter preference synchronisation explicitly carried to Functional Design (R2); R1-010 carried to Test |
+| Scope gate | **At first Step 4 pass: FAIL / NOT APPROVED (historical). Latest: candidate ready for final human approval, gate remains NOT APPROVED (Section 11).** |
+| Latest authorised success criteria decision | **DEC-R1-007-FINAL Option B**, 2026-10-22; SC-001–SC-003 numerical targets removed, SC-004 guarantee retained/revised; further human decision not needed. |
+
+This review neither certifies the document nor approves it for Design. Its findings reflect the evidence in the uploaded baseline; new authoritative material may change their disposition.
+
+
+## 9. Step 3 — Reconciliation of the authorised Scope baseline (2026-10-22)
+
+**Authority:** Explicit product-owner decisions in this conversation: DEC-R1-001 Option D; DEC-R1-001-P1/P2; DEC-R1-002 Option B; DEC-R1-003 Option C; superseding DEC-R1-004-FINAL Option A; DEC-R1-005 Option A; DEC-R1-006 Option B and P1/P2/P3; DEC-R1-007 and **DEC-R1-007-FINAL Option B**; plus DEC-R1-PHASE-001. R1-008, R1-009 and R1-010 remain authorised downstream deferrals. No other substantive Scope choice has been added by the reviewer.
+
+**Original baseline hash:** `4504d3b74decb91756f7219bbbb62e5f351449ee4322c074ce72fd42e8ebc2fb`  
+**Reconciled canonical `spec.md` SHA-256:** `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd`  
+**Specification version label:** 2026-10-22 R1 reconciled draft (not approved).  
+**Reconciliation state:** Authored; awaiting independently conducted Step 4 verification and version-specific human Scope approval.
+
+| Finding / authorised decision | Reconciled specification locations | Change applied | Step 3 status (historical; superseded by Section 10) |
+|---|---|---|---|
+| R1-001 / DEC-R1-001, P1, P2 | Clarifications, Story 1, Story 2, Edge Cases, FR-001–004, FR-011, FR-013, Task entity, AC-001/002/004/006, Assumptions | Title only mandatory; optional description/date; effective Medium priority when omitted/cleared; undated-last in either due-date direction; validation and related scenarios aligned | **OPEN** — independently verify |
+| R1-002 / DEC-R1-002 | Product Boundary, Story 4, FR-015, Assumptions | Desktop/mobile browser web application; native apps out of scope; no offline guarantee invented | **OPEN** — independently verify |
+| R1-003 / DEC-R1-003 | Product Boundary, Story 4, FR-008/010, AC-009/010, SC-004, User Account entity, Assumptions | Account-specific synchronisation and session-to-session continuity across desktop/mobile browsers | **OPEN** — independently verify |
+| R1-004 / DEC-R1-004-FINAL | Clarifications, Story 4, Edge Cases, FR-014, AC-008, Assumptions | Failed saved-data load gives error/retry/support and protects existing data; superseded self-service reset excluded; failed new-save UI remains with R2 | **OPEN** — independently verify |
+| R1-005 / DEC-R1-005 | Product Boundary, Story 4, FR-010, AC-009/010, User Account/Task entities, Assumptions | Private accounts/sign-in, account separation, remote storage/synchronisation permitted, no sharing | **OPEN** — independently verify |
+| R1-006 / DEC-R1-006, P1/P2/P3, DEC-R1-PHASE-001 | Clarifications, Story 3, FR-013, AC-006/007/011, Task Sorting entity, Assumptions | Four sorting methods, both directions, earliest-due initial default, retained same-date priority/creation tie rule; remaining tie cases/preferences deferred to R2 | **OPEN** — independently verify |
+| R1-007 / DEC-R1-007, **DEC-R1-007-FINAL** | Clarifications, Success Criteria, SC-004, Story 4, FR-008, AC-009 | Surviving draft clarification outcomes retained; unsupported numeric SC-001/002/003 discarded as active targets; SC-004 retained as saved-data correctness and account cross-device availability guarantee (without 100% unsupported numeric threshold) | **OPEN** — independently verify |
+| R1-008 / DEC-R1-008 | No new Scope-level failure UI policy; FR-009 and SC-004 retained | Save failure state/retry and uncommitted-form handling left to R2 | **DEFERRED** — R2 |
+| R1-009 / DEC-R1-009 | FR-011, AC-004 retained | Overdue comparison time-zone reference left to R2 | **DEFERRED** — R2 |
+| R1-010 / DEC-R1-010 | SC-004 retained, test methods not embedded in Scope | Detailed verification methodology remains in Test for approved outcomes | **DEFERRED** — Test |
+
+**Scope/Design discipline:** Sorting-tie behaviour beyond the expressly retained same-due-date rule; sort/filter preference restoration across devices; detailed authentication/recovery interactions; save-failure behaviour; synchronisation conflicts and mechanics; overdue time-zone policy; and exact test procedures remain downstream. This does **not** permit changing approved product capabilities or introducing unapproved data-sharing, reset or durability exceptions.
+
+**Authoring-quality check (not independent verification):** The source file was amended in place with existing FR/AC/SC identifiers preserved where applicable and new requirements/acceptance criteria appended. All prior human-authorised decision IDs are cited in the reconciled specification. Step 4 must separately confirm no missed, contradictory, unverifiable or unauthorised changes and update finding dispositions before presenting the human approval gate.
+
+**Current gate:** `NOT APPROVED`; no authorisation to enter Spec Kit Plan / Design.
+
+
+## 10. Step 4 — Initial independent verification (2026-10-22; historical exceptions, superseded by Section 11)
+
+**Scope and method.** Re-read the reconciled canonical `spec.md` against the decisions evidenced in this conversation, independently of the Step 3 change-mapping assertions. Reassessed requirement language and acceptance criteria for contradictions, unsupported product choices, missing fundamental boundaries and downstream phase ownership. Performed identifier and text-presence checks as supporting controls, not as proof of semantic correctness. No technical architecture, UI details or test methodologies were inferred. This is a distinct verification pass by the R1 reviewer, **not** a second-person external audit or final human approval.
+
+**Exact verified input:** `spec.md` SHA-256 `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd` (180 lines; unchanged by Step 4). This version has **not** been approved for Design and is **not** a passing Scope baseline.
+
+### 10.1 Decision-to-spec verification
+
+| Original finding and authority | Current specification evidence (line numbers refer to Step 3 hash above) | Outcome / authoritative disposition |
+|---|---|---|
+| R1-001 — DEC-R1-001/P1/P2 | FR-001–004 (126–129), FR-011 (136), FR-013 (138), AC-002/006 (152/156), story 1 (45–57) | `RESOLVED`: title only required; optional attributes; effective Medium default; undated-last rule. Sorting ambiguity separately remains under R1-006. |
+| R1-002 — DEC-R1-002 | Product Boundary (13–17), FR-015 (140), Story 4 (96–110) | `RESOLVED`: desktop and mobile-browser web app, native apps excluded, no offline guarantee invented. |
+| R1-003 — DEC-R1-003 | Product Boundary (15), FR-008/010 (133/135), AC-009 (159), SC-004 (167) | `RESOLVED`: account-specific cross-device task synchronisation and session persistence. Timing/conflict mechanics correctly left downstream. |
+| R1-004 — DEC-R1-004-FINAL superseding earlier decision | FR-014 (139), AC-008 (158), Edge Cases (120) | `RESOLVED`: failed **existing-data load** error/retry/support/protection; no user self-reset. Failed new saves remain delegated under R1-008. |
+| R1-005 — DEC-R1-005 | Product Boundary (15–17), FR-010 (135), AC-010 (160), User Account entity (144) | `RESOLVED`: private sign-in and account isolation. **New separately tracked R1-011:** how first-time users obtain an account. |
+| R1-006 — DEC-R1-006/P1/P2/P3, DEC-R1-PHASE-001 | FR-013 (138), AC-006/007/011 (156–157/161), Story 3 (78–92) | `OPEN`: major approved sorting choices present but FR-013 has a contradicting universal tie instruction; editorial reconciliation required. |
+| R1-007 — DEC-R1-007 and DEC-R1-007-FINAL | Clarifications (21–41), Success Criteria (163–169), SC-004 (167) | `RESOLVED`: retained outcomes approved subject to latest decisions; unapproved numerical SC-001–003 no longer active; SC-004 retained. **The separate consolidated Scope gate remains unapproved.** |
+| R1-008 — DEC-R1-008 | FR-009 (134) and saved-change requirement FR-008 (133) | `DEFERRED` to R2: failed-save feedback and UI state. Not a Scope blocker. |
+| R1-009 — DEC-R1-009 | FR-011 (136), AC-004 (154) | `DEFERRED` to R2: calendar-date comparison reference/time zone. Not a Scope blocker. |
+| R1-010 — DEC-R1-010 | SC-004 (167); detailed Test method absent | `DEFERRED` to Test. Not a Scope blocker. |
+
+### 10.2 Open finding R1-006 — Primary-sort contradiction
+
+- **Source:** `spec.md` FR-013 at line 138, echoed by AC-007 at line 157 and the clarification at line 30.
+- **Evidence:** FR-013 authorises all four sorting methods in both directions but unconditionally states: “For tasks sharing a due date, higher priority MUST come first”. Two tasks with the same date but Low vs High priority expose a direct contradiction when the user chooses **Priority: Low to High**. The same problem can affect Title and Date Created as selected primary sort methods.
+- **Origin:** `EXPLICIT` conflicting wording inadvertently inherited during reconciliation; **type:** `CONFLICTING`.
+- **Severity / phase owner / approval:** `MEDIUM` / `SCOPE` corrective reconciliation / `BLOCKER` until wording agrees with approved decisions.
+- **Resolution:** Clarify in the spec and affected acceptance criterion/clarification that high-priority-then-oldest tie-breakers apply **when sorting by Due Date**, leaving other secondary ordering to R2 under DEC-R1-PHASE-001. This is a clarifying correction directly supported by existing approvals, not a request for further sorting micro-decisions. Have the spec author reconcile and then independently re-verify exact amended hash.
+- **Current status:** `OPEN` — amendment and independent re-verification pending. No new human sorting-policy approval requested.
+
+### 10.3 New finding R1-011 — How a first-time user obtains an account
+
+- **Source:** `spec.md` Product Boundary lines 13–17, FR-001 line 126, FR-010 line 135, User Account entity line 144, Story 4 lines 96–110.
+- **Evidence:** Creating tasks requires sign-in and the app promises private accounts, but no requirement says **who can obtain an account or through which permitted provisioning route**. A new intended user with no account has no defined authorised path to first use. Open self-registration and invitation/administrator provisioning lead to materially different product access boundaries.
+- **Origin:** `IMPLICIT` account accessibility consequence of DEC-R1-005; **type:** `MISSING` material product access policy.
+- **Severity / phase owner / approval:** `HIGH` / `SCOPE` / `BLOCKER` pending explicit authorised decision.
+- **Alternatives requiring product-owner decision:** (A) First-time users can register themselves for a private account; (B) accounts are provisioned only through invitation or administration; (C) another specified eligibility/provisioning policy. **Reviewer recommendation: A**, as the least-restrictive reading of a personal task-management web app, but this recommendation is not approved and must not be inserted as a requirement without authority. Password or identity provider mechanics, screen flow, session management and account recovery interactions remain in Design.
+- **Current status:** `OPEN` — authority and baseline amendment pending.
+
+### 10.4 Other verification observations (not additional Scope defects)
+
+- **Coverage and ID integrity:** Exactly 15 unique FR identifiers (FR-001–015), 11 unique AC identifiers (AC-001–011), and one active outcome criterion SC-004. Preserving SC-004's original ID maintains traceability after removal of rejected SC-001–003 targets.
+- **Data lifecycle check:** Create → edit → complete → reopen → confirmed permanent delete is coherent with the approved persistent, account-owned task model. No search, reminders, exports, recurring tasks or collaboration is implied.
+- **Reliability/privacy:** Private account isolation and protection against destructive changes when loading fails are present. The exact authentication controls, backend recovery mechanisms, concurrency/conflict outcomes and permitted browser/version matrices are downstream design/verification matters; no unsupported backup/SLA promise is introduced.
+- **Phase ownership:** Sorting tied-value rules (other than approved due-date ordering), filtering/sort preference behaviour across devices, failed-write user-facing states, overdue time-zone reference, and test measurement detail retain the authorised downstream assignments.
+- **No authorised new features assumed.** Reviewer observations cannot substitute for decisions about self-registration or product-access eligibility.
+
+### 10.5 Historical initial-pass dispositions and exit recommendation (superseded by Section 11)
+
+| Finding | Severity | Phase owner | Current status | Scope gate effect |
+|---|---|---|---|---|
+| R1-001 | HIGH | SCOPE | `RESOLVED` | No blocker |
+| R1-002 | HIGH | SCOPE | `RESOLVED` | No blocker |
+| R1-003 | HIGH | SCOPE | `RESOLVED` | No blocker |
+| R1-004 | HIGH | SCOPE | `RESOLVED` | No blocker |
+| R1-005 | MEDIUM | SCOPE | `RESOLVED` | No blocker; R1-011 newly identified separately |
+| R1-006 | MEDIUM | SCOPE | `OPEN` | Correct FR-013 / AC-007 and re-verify |
+| R1-007 | MEDIUM | SCOPE | `RESOLVED` | Consolidated human approval still required as a **separate gate** |
+| R1-008 | HIGH | FUNCTIONAL_DESIGN | `DEFERRED` | No Scope blocker |
+| R1-009 | MEDIUM | FUNCTIONAL_DESIGN | `DEFERRED` | No Scope blocker |
+| R1-010 | MEDIUM | TEST | `DEFERRED` | No Scope blocker |
+| R1-011 | HIGH | SCOPE | `OPEN` | First-time account eligibility/provisioning decision required |
+
+**Totals:** 6 `RESOLVED`, 2 `OPEN`, 3 `DEFERRED`, 0 `RISK_ACCEPTED` and 0 `PROPOSAL_REJECTED` findings. The historical DEC-R1-004 Option B is **SUPERSEDED**, not a second active decision; SC-001–SC-003 targets are rejected proposals, not additional open findings.
+
+**Verification outcome:** `FAIL — CORRECTIVE ACTION REQUIRED`, not failure of the overall product concept. No changes were made to `spec.md` during Step 4; the verified hash remains the Step 3 draft. Obtain R1-011 authority, correct the R1-006 wording without altering approved behaviour, reconcile both into the canonical spec, perform another evidence-based verification on the exact revised version, and present the resulting baseline and R2/Test deferrals for a **single explicit product-owner approval** before Spec Kit Plan. No final Scope approval has occurred.
+
+
+## 11. Step 4 — Authorised correction and independent re-verification (2026-10-22)
+
+**Authoritative Step 4 verification record (preceding final human gate approval).** Section 12 is the subsequent, authoritative gate record. This section superseded earlier provisional verification status tables without erasing the original findings, evidence, decisions or failed initial verification. Verification is a separate read-and-challenge pass by the R1 reviewer after authoring, **not** an external second reviewer or product-owner Scope approval.
+
+### 11.1 Authority and exact candidate baseline
+
+- **New authority:** Product owner explicitly selected **R1-011 Option A**, recorded as **DEC-R1-011**, on 2026-10-22: first-time users can independently register a private account. Invitation-only or administrator-provisioned account creation was not selected. Registration technology and detailed workflows were not approved by that decision.
+- **Existing authority for sorting correction:** DEC-R1-006, DEC-R1-006-P1/P2/P3 and DEC-R1-PHASE-001, with the surviving Due Date tie-break clarified only for **Due Date sorting**. No new tie-break policy was proposed or approved.
+- **Previously failed Step 4 input:** `16f8399e885c0ea96e58534c5e3cec5ad1f7e62d021bf448a6c08df4bef2edbd` (180 lines).
+- **Corrected candidate `spec.md`: SHA-256 `53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e` (184 lines)**. This exact hash is the version eligible to be presented for human Scope approval. Its status remains **Draft — reconciled, not Scope-approved**.
+
+### 11.2 Source → decision → amendment → independent check
+
+| Finding (origin/type/owner/severity) | Approval or controlling authority | Canonical specification change and evidence | Re-verification / current disposition |
+|---|---|---|---|
+| **R1-006** (`EXPLICIT` / `CONFLICTING`; SCOPE; MEDIUM) | Existing DEC-R1-006/P1/P2/P3, DEC-R1-PHASE-001 and prior same-date clarification; user authorised the wording correction without additional sorting-product decisions | Clarifications line 30, **FR-013 line 140**, **AC-007 line 160** now expressly apply priority/creation tie-breaks only with Due Date as the selected primary sort. Other tie cases remain with R2. | **RESOLVED.** If user selects Priority Low-to-High, the chosen primary direction takes precedence even when due dates match; same-date priority-high tie-break is constrained to Due Date mode. Four sorting methods, both directions, default and undated-last preserved. |
+| **R1-011** (`IMPLICIT` / `MISSING`; SCOPE; HIGH) | **DEC-R1-011 Option A**, explicit human approval 2026-10-22 | Product Boundary line 15; clarification line 38; Story 4 lines 99–112; **FR-016 line 143**, User Account entity line 147, **AC-012 line 165**, Assumptions line 176. First-time self-registration without invitation or admin provisioning is now expressly required. | **RESOLVED.** First-time users have a defined route to obtain an account; the same account can access a private task list across devices. No unsupported sign-in provider or UI mechanism was introduced. |
+
+### 11.3 Whole-spec regression and boundary checks
+
+The revised canonical file was re-read against the directly authorised product decisions and challenged through representative user scenarios. A separate read-only verification script checked identifier uniqueness/completeness and 19 additional document-presence/consistency controls, which all passed. These textual checks support, but do not replace, semantic review.
+
+- **Task creation and lifecycle:** Only title required (FR-001); absent or cleared priority maps to Medium (FR-002); optional description/date remain absent if unspecified; active/completed/reopened/confirmed-deleted lifecycle unaffected (FR-004–006; AC-001–003).
+- **Accounts/privacy/platform:** Self-registration FR-016/AC-012 is coherent with private sign-in and strict account isolation FR-010/AC-010; desktop/mobile browser boundary and cross-device saved-task continuity FR-008/015, AC-009 and SC-004 remain intact. Sharing, collaboration, native apps and offline guarantee were not added.
+- **Ordering/filtering:** FR-007/012 combined filtering and filter restoration unchanged. All four sorting methods and both directions remain primary, with Due Date earliest-first default, undated-last in either Due Date direction, and same-date priority/creation tie-breaking **only in Due Date mode** (FR-013, AC-006/007/011).
+- **Failure and data protection:** FR-009 and FR-014/AC-008 still distinguish failed writes from failures loading previously saved data; error/retry/support and protection from overwriting/destroying unreadable existing data survive. A user-facing data reset is not reintroduced.
+- **Outcome commitments:** Only active **SC-004** remains, covering correctly saved and synchronised tasks. Withdrawn numerical SC-001–003 are described for audit but not reinstated as requirements.
+- **No new material decision is inferred:** Account registration workflow, authentication method, concurrency/conflict interactions, secondary sorts beyond approved Due Date tie rules, error-state UI, time-zone policy, synchronisation implementation, operational recovery and test methods remain downstream.
+
+**Integrity:** 16 unique functional requirements (`FR-001` through `FR-016`), 12 unique acceptance criteria (`AC-001` through `AC-012`) and one active success criterion (`SC-004`); no duplicate IDs or numbering gaps. This is a document review, **not an executed implementation or security test**. No new material Scope blocker was identified in this pass.
+
+### 11.4 Authoritative findings register — latest
+
+| Finding | Severity | Phase owner | Final R1 status | Rationale / next owner |
+|---|---|---|---|---|
+| R1-001 | HIGH | SCOPE | **RESOLVED** | Optional fields, Medium default, undated-last reconciled and verified |
+| R1-002 | HIGH | SCOPE | **RESOLVED** | Web app for both desktop/mobile browsers verified |
+| R1-003 | HIGH | SCOPE | **RESOLVED** | Account-level session persistence and cross-device task sync verified |
+| R1-004 | HIGH | SCOPE | **RESOLVED** | Final fail-load protection/support policy verified; earlier reset superseded |
+| R1-005 | MEDIUM | SCOPE | **RESOLVED** | Private sign-in/account isolation verified; separate registration issue R1-011 resolved |
+| R1-006 | MEDIUM | SCOPE | **RESOLVED** | Conflicting unconditional sorting tie wording corrected and re-verified |
+| R1-007 | MEDIUM | SCOPE | **RESOLVED** | Surviving clarification outcomes retained, unsupported numeric targets withdrawn |
+| R1-008 | HIGH | FUNCTIONAL_DESIGN | **DEFERRED** | R2: failed-save UI state, confirmation and retry/recovery behaviour |
+| R1-009 | MEDIUM | FUNCTIONAL_DESIGN | **DEFERRED** | R2: consistent calendar-date/time-zone overdue interpretation |
+| R1-010 | MEDIUM | TEST | **DEFERRED** | Test: measurement procedures and representative test environments for approved outcomes |
+| R1-011 | HIGH | SCOPE | **RESOLVED** | Human-authorised self-registration recorded in FR-016 and AC-012 |
+
+**Totals:** 8 `RESOLVED`, 3 `DEFERRED`, **0 `OPEN`**, 0 `RISK_ACCEPTED`, 0 `PROPOSAL_REJECTED` findings. The withdrawn SC-001–003 thresholds are rejected *proposals*, not additional finding dispositions. DEC-R1-004 historical reset Option B is *superseded*, not an active approved requirement.
+
+### 11.5 Scope exit briefing and recommendation
+
+**Readiness recommendation:** **PASS R1 independent verification; READY FOR HUMAN SCOPE APPROVAL.** No material unresolved Scope blocker was found under the proportionate product-definition threshold. The baseline is coherent and sufficiently bounded for Spec Kit Plan *once* the Scope approval gate is passed.
+
+**Retained product boundary:** Personal task manager web app (desktop/mobile browsers); first-time self-registration, private sign-in/account-isolated task list; create/edit/view/complete/reopen/confirmed delete; optional task attributes with Medium priority default; status/priority filters; four selectable bidirectional sorts; dated/undated and overdue rules; session persistence and cross-device synchronisation; saved-load error/retry/support and data protection. No native apps, task sharing/collaboration, self-service data reset or guaranteed offline operation.
+
+**Residual limitations and downstream handoffs:** R1-008 (HIGH) and R1-009 (MEDIUM) explicitly deferred to R2 Functional Design; R1-010 (MEDIUM) to Test. R2 also determines unapproved sorting tie cases, filter/sort preference details and account/error/recovery interactions within the signed-off product boundary. Technical Design addresses identity/security controls, synchronisation mechanics, data integrity and operational recovery without inventing new product commitments. No explicit backup retention, SLA, offline guarantee or cross-device preference sync was approved. There are **no formally risk-accepted findings**.
+
+**Required single consolidated human approval:** Product owner must expressly approve **the exact canonical `spec.md` version SHA-256 `53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e`** together with the cited downstream deferrals and residual limitations. Until that approval is recorded with approver/date/version, the Scope gate remains **`NOT APPROVED`**; do not progress to Spec Kit Plan/Design. This independent verification recommendation is not itself authorisation.
+
+
+## 12. Final consolidated human Scope approval (2026-10-22)
+
+**Status: `APPROVED` — Scope gate PASSED.** This section is the current authoritative version-specific human approval record; it supersedes all earlier *provisional gate statuses* in Sections 1–11. It does not erase the review audit trail, alter individual finding dispositions, or imply prior reviewer approval on the product owner's behalf.
+
+### 12.1 Exact approval and approver
+
+- **Approver / authority:** Product owner (requesting user), in an explicit approval message in this conversation, 2026-10-22.
+- **Approval statement (verbatim):** “I explicitly approve the Personal Task Manager Scope baseline, spec.md SHA-256 53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e, including the documented downstream deferrals and limitations. Record final Scope approval and authorise progression to Spec Kit Plan.”
+- **Approved artifact:** Canonical `spec.md` for branch `001-personal-task-manager`.
+- **Approved exact SHA-256:** `53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e`.
+- **Verification at recording:** Recomputed SHA-256 of the current on-disk `/mnt/data/spec.md`; **exact match** to the human-approved hash. The canonical specification bytes were **not changed** during approval recording.
+- **Approval encompasses:** The reconciled product-definition baseline, eight `RESOLVED` Scope findings, and the three named `DEFERRED` downstream findings and limitations described in Section 11.5.
+- **Authorised progression:** **Spec Kit Plan** may begin using this *exact* approved specification baseline. This is Scope-phase approval, **not** final Design, Build, Test, or Deploy approval.
+
+### 12.2 Scope closure and downstream obligations
+
+| Finding(s) | Authoritative status | Obligation / handoff |
+|---|---|---|
+| R1-001–R1-007, R1-011 | `RESOLVED` (8) | Approved amendments independently verified; no open Scope blockers |
+| R1-008 (HIGH) | `DEFERRED` | R2 Functional Design: failed-save feedback, persistence-confirmation states, retries/recovery and user-visible failure behaviour |
+| R1-009 (MEDIUM) | `DEFERRED` | R2 Functional Design: consistent date/time-zone rule for overdue display; escalate any material product-policy choice |
+| R1-010 (MEDIUM) | `DEFERRED` | Test: measurement methods and representative environments for approved outcomes |
+
+**Approved boundary and residual limitations:** Individual private task-list accounts with self-registration and sign-in, desktop/mobile web access, cross-device synchronisation, task lifecycle, optional fields, filters and authorised sorting, protected task-load failures, and the SC-004 saved-data guarantee. No native applications, collaboration/sharing, self-service data reset, guaranteed offline operation, explicit backup-retention or availability SLA, or additional unsupported success thresholds have been approved. Sorting tie cases outside the approved Due Date rule, sort/filter preference details, detailed identity/security/synchronisation mechanisms, and operational recovery remain downstream work within that boundary. These limitations are **not** additional approvals for unscoped functionality, and no finding has been formally recorded as `RISK_ACCEPTED`.
+
+### 12.3 Version control and gate consequence
+
+- **Gate result:** `PASS — HUMAN SCOPE APPROVAL RECORDED`.
+- **Review report authority:** Section 12 controls the current gate status; Section 11 controls the final verified requirement/finding status. Earlier references to `Draft` or `NOT APPROVED`, including the embedded metadata in the *byte-identical* `spec.md`, describe the status at document preparation and are **superseded for this exact approved hash** by this separate gate record. The approved `spec.md` was intentionally not edited to avoid changing its hash after the product owner's version-specific approval.
+- **Change control:** Any subsequent change to `spec.md` changes the approved baseline and requires appropriate assessment, reconciliation, verification and renewed approval before being treated as Scope-approved. Downstream teams must not infer authority for product decisions absent from this baseline.
+- **Next action:** Start Spec Kit Plan against the hash-verified approved `spec.md` and carry R1-008/R1-009 to R2, R1-010 to Test, with their issue IDs and dispositions intact.
