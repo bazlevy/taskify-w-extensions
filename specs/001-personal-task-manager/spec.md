@@ -4,221 +4,185 @@
 
 **Created**: 2026-10-20
 
-**Status**: Draft
+**Reconciled**: 2026-10-22 (R1-011 approved; R1-006 wording corrected; independently verified)
+
+**Status**: Scope Approved
+
+**Approved**: 2026-10-22
+
+**Approval Reference**: `scope_review_report.md`, Section 12
 
 **Input**: User description: "Build a simple personal task manager."
 
+## Product Boundary
+
+The first release is a personal task-management **web application for desktop and mobile browsers**. Each first-time user may self-register a private account without an invitation or administrator provisioning. Users sign in to their private accounts to access one personal task list each. Successfully saved tasks and their changes persist between sessions and synchronise across browsers and devices signed in to the same account. Tasks belonging to one account must not be accessible through another account.
+
+Native desktop/mobile applications, task sharing and collaboration are outside the first release. No offline-operation guarantee is established. Detailed authentication, synchronisation mechanisms, recovery interactions, and browser/version compatibility belong to downstream Design and Test within these boundaries.
+
 ## Clarifications
 
-### Session 2026-10-20
+### Session 2026-10-20 — surviving outcomes confirmed 2026-10-22
 
-- Q: After a task is marked complete, can the user return it to active status? → A: A completed
-  task can be reopened and returned to active status while preserving its details.
-- Q: Does a task’s due date represent only a calendar day, or must it support a specific time of
-  day as well? → A: A task due date is a calendar date only; it has no time-of-day component.
-- Q: What should happen when the user deletes a task? → A: The user confirms deletion, after which
-  the task is permanently removed and cannot be restored.
-- Q: May a user create or edit a task with a due date that has already passed? → A: Past calendar
-  dates are valid; the task remains available and is visibly identified as overdue.
-- Q: When the user returns in a new session, should their most recently selected status and priority
-  filters be restored? → A: Restore the last selected status and priority filters.
-- Q: In the absence of a user-selected sort option, how should matching tasks be ordered? → A:
-  Display matching tasks by earliest calendar-date due date first.
-- Q: When two or more matching tasks have the same due date, which order should the list use between
-  them? → A: Order same-date tasks by higher priority first; for the same priority, order the
-  earlier-created task first.
-- Q: If the task manager cannot read previously saved tasks when a session begins, what may the user
-  do next? → A: Show an error with a retry option; do not allow task-data changes or overwrite
-  unreadable saved data until the prior data loads successfully.
-- Q: If a task was completed after its due date, should it still be visibly labelled overdue? → A:
-  Only active tasks with past due dates are overdue; reopening one makes it overdue again if its due
-  date remains past.
+The outcomes below are retained from the draft insofar as consistent with the expressly authorised 2026-10-22 decisions. Their original respondent and approval provenance were not independently verified.
+
+- A completed task can be reopened as active without changing its recorded task details.
+- Due dates are **calendar dates**, without a time-of-day component.
+- A user confirms deletion before a task is permanently removed; there is no in-application restore action.
+- A past calendar date is a valid due date. An active task with a past due date is visibly overdue; a completed task is not overdue, but becomes overdue if reopened while its due date remains past.
+- The most recently selected status and priority filters are restored between sessions; the task list initially shows all tasks before filters are changed.
+- The initial/default sort is by **earliest due date first**. **When sorting by Due Date**, tasks sharing the same due date are ordered by higher priority first; among tasks sharing a due date and priority, earlier-created tasks precede later-created tasks. Other tie cases belong to Functional Design.
+- When previously saved tasks cannot load, show an error and allow retry; do not allow task-data changes that could overwrite or destroy existing saved data while loading remains unresolved. Persistent failures must direct the user to support.
+
+### Session 2026-10-22 — authorised Scope decisions
+
+- **DEC-R1-001; DEC-R1-001-P1:** Only the title is a mandatory user-entered field. Description, priority and due date are optional. If priority is omitted during creation or cleared during editing, its effective value becomes **Medium**.
+- **DEC-R1-001-P2:** When sorting by due date, tasks with no due date appear last in **either direction**; no due date is invented for them.
+- **DEC-R1-002; DEC-R1-003; DEC-R1-005:** The product is a web app for desktop and mobile browsers, using private accounts and sign-in; each account's personal tasks are accessible and synchronised across devices. Remote storage and transmission of those tasks are permitted; access by a different account is prohibited. Sharing/collaboration remain out of scope.
+- **DEC-R1-011:** First-time users can self-register private accounts without requiring an invitation or administrator provisioning. The registration method and interaction details belong to Design.
+- **DEC-R1-004-FINAL (supersedes DEC-R1-004):** On failure to load previously saved tasks, notify the user, offer retry, direct persistent failures to support and protect existing saved data from destructive/overwriting changes. No self-service saved-data reset is authorised.
+- **DEC-R1-006; DEC-R1-006-P1/P2/P3:** User-selectable sorting supports exactly **Due Date, Priority, Date Created, and Title**, with both directions for each. First-use default is **Due Date — earliest first**. Secondary ordering outside the retained same-due-date rule, and sorting preference restoration, are left to Functional Design.
+- **DEC-R1-007-FINAL:** Remove unapproved numeric success thresholds SC-001–SC-003; retain the successfully-saved data persistence/cross-device availability guarantee in SC-004 without the original unsupported numeric claim.
+- **DEC-R1-PHASE-001; DEC-R1-008/009/010:** Detailed sorting tie cases, preference synchronisation, failed-write UI behaviour, overdue time-zone interpretation and test methodologies are assigned to their downstream phases, without adding new product requirements.
 
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Create and View Tasks (Priority: P1)
 
-As an individual, I want to add a task with its essential details and see it in my task list, so I
-can maintain a reliable personal record of work to do.
+As a signed-in individual, I want to add a task with only a title if I choose, or with additional details, and see it in my task list, so I can maintain a reliable personal record of work to do.
 
-**Why this priority**: Capturing and viewing tasks is the minimum useful experience; the remaining
-workflows depend on a task existing.
+**Why this priority**: Capturing and viewing tasks is the minimum useful experience; the remaining workflows depend on a task existing.
 
-**Independent Test**: Create a task with a title, description, priority, and due date; verify that
-the task appears in the active-task list with all supplied details.
+**Independent Test**: Create a task using only a valid title, confirm it is active with Medium priority and no invented description or due date; separately create a task with optional details and verify that all supplied details appear.
 
 **Acceptance Scenarios**:
 
-1. **Given** an empty task list, **When** the user submits a task with all required fields,
-   **Then** the task is added as active and its title, description, priority, and due date are
-   displayed.
-2. **Given** a task form, **When** the user leaves any required field empty or enters an invalid
-   due date, **Then** the task is not created and the relevant field is identified for correction.
+1. **Given** an empty task list, **When** the signed-in user creates a task with a valid title alone, **Then** it is added as active with Medium priority, no description and no due date.
+2. **Given** a task form, **When** the user provides a blank/whitespace-only title or an invalid non-empty due date, **Then** the task is not created and the relevant field is identified for correction.
+3. **Given** a valid title and valid optional description, priority and/or calendar due date, **When** the user saves, **Then** the task retains and displays its supplied details and effective priority.
 
 ---
 
 ### User Story 2 - Maintain Task Status and Details (Priority: P2)
 
-As an individual, I want to update, complete, and delete tasks, so my list accurately reflects my
-current commitments.
+As an individual, I want to update, complete, reopen and delete my tasks, so my list accurately reflects my current commitments.
 
-**Why this priority**: Task lists lose value unless people can keep details current and remove
-items they no longer need.
+**Why this priority**: Task lists lose value unless people can keep details current and remove items they no longer need.
 
-**Independent Test**: Create a task, change its details, mark it complete, then delete it; verify
-each action produces the stated list and task-detail result.
+**Independent Test**: Create a task, change its details, mark it complete, reopen it, then delete it; verify each action produces the stated task-detail and list result.
 
 **Acceptance Scenarios**:
 
-1. **Given** an active task, **When** the user saves edits to its title, description, priority, or
-   due date, **Then** the task shows the updated values.
-2. **Given** an active task, **When** the user marks it complete, **Then** it is shown as completed
-   and is no longer included in the active-task view.
-3. **Given** a completed task, **When** the user reopens it, **Then** it returns to active status
-   with its title, description, priority, and due date unchanged.
-4. **Given** a task, **When** the user confirms deletion, **Then** it is permanently removed and no
-   longer appears in any task view.
+1. **Given** an existing task, **When** the user saves valid edits to its title, optional description, priority or due date, **Then** the task displays the updated values; clearing priority makes it Medium, and clearing description or due date leaves those attributes absent.
+2. **Given** an active task, **When** the user marks it complete, **Then** it is shown as completed and is not included in a view filtered to active tasks.
+3. **Given** a completed task, **When** the user reopens it, **Then** it returns to active status with its task details unchanged.
+4. **Given** a task, **When** the user confirms deletion, **Then** it is permanently removed from the task list and no restore action is offered.
 
 ---
 
-### User Story 3 - Filter Task List (Priority: P3)
+### User Story 3 - Filter and Sort Tasks (Priority: P3)
 
-As an individual, I want to filter tasks by completion status and priority, so I can focus on the
-most relevant work.
+As an individual, I want to filter and sort my tasks, so I can focus on relevant work and choose a useful ordering.
 
-**Why this priority**: Filtering makes a growing personal task list practical without changing the
-core ability to manage tasks.
+**Why this priority**: Filtering and sorting make a growing personal task list practical without changing the core ability to manage tasks.
 
-**Independent Test**: Create tasks covering each status and priority, apply each filter and a
-combined status-and-priority filter, and verify only matching tasks are displayed.
+**Independent Test**: Create tasks spanning the supported statuses, priorities, due dates and titles; verify individual and combined filters, all four sorting methods in both directions, initial default sorting and undated-last handling.
 
 **Acceptance Scenarios**:
 
-1. **Given** tasks with active and completed statuses, **When** the user filters by a status,
-   **Then** only tasks with that status are displayed.
-2. **Given** tasks with low, medium, and high priorities, **When** the user filters by a priority,
-   **Then** only tasks with that priority are displayed.
-3. **Given** active and completed tasks across multiple priorities, **When** the user applies both
-   filters, **Then** only tasks matching both selected values are displayed.
+1. **Given** tasks with active and completed statuses, **When** the user filters by a status, **Then** only tasks with that status are displayed.
+2. **Given** tasks with Low, Medium and High priorities, **When** the user filters by priority, **Then** only tasks matching the selected priority are displayed.
+3. **Given** active and completed tasks across multiple priorities, **When** the user applies both filters, **Then** only tasks matching both values are displayed.
+4. **Given** a task list, **When** the user selects Due Date, Priority, Date Created or Title as the sort method and chooses a direction, **Then** matching tasks are displayed in that requested primary order.
+5. **Given** tasks with and without due dates, **When** the user sorts by Due Date in either direction, **Then** undated tasks follow dated tasks.
 
 ---
 
-### User Story 4 - Resume a Saved Task List (Priority: P1)
+### User Story 4 - Resume a Private Task List Across Devices (Priority: P1)
 
-As an individual, I want my task list to remain available after I leave and return, so I do not
-need to recreate my work.
+As an individual, I want to register my own private account and access my personal task list when I return or sign in from another device, so I can get started and continue working without recreating my tasks.
 
-**Why this priority**: Persistence is an explicit requirement and essential to trust in the task
-manager.
+**Why this priority**: Private account access, cross-device synchronisation and persistence are approved product guarantees and essential to trust in the task manager.
 
-**Independent Test**: Create and modify tasks, leave the application, return to it, and verify the
-same task details and completion statuses are available.
+**Independent Test**: Register a first-time private account without an invitation or administrator action, sign in to that account in desktop and mobile browsers, create and modify tasks, and verify that successfully saved task data is available on both after synchronisation. Sign in to a different account and verify that the first user's tasks are inaccessible.
 
 **Acceptance Scenarios**:
 
-1. **Given** one or more saved tasks, **When** the user starts a new session, **Then** the saved
-   tasks, details, and completion statuses are restored.
-2. **Given** saved tasks and selected filters, **When** the user returns in a new session,
-   **Then** the selected filters are restored, matching saved tasks are displayed, and all saved
-   tasks remain available when the filters are changed.
+1. **Given** successfully saved tasks, **When** their account owner signs in during a later session, **Then** the saved tasks, details and completion statuses are available.
+2. **Given** successfully saved task changes in one signed-in browser, **When** the same account is used on another device and synchronisation completes, **Then** the changes are available there with the correct details and status.
+3. **Given** a different signed-in account, **When** that user accesses the task manager, **Then** the first account's task list is not accessible.
+4. **Given** previously selected status and priority filters, **When** the user resumes a session, **Then** the filters are restored, matching saved tasks are displayed, and all tasks remain available when the filters are changed. Whether preferences synchronise across devices is a Functional Design detail.
+5. **Given** a persistent failure to load existing saved tasks, **When** retry does not resolve it, **Then** the user is directed to support, and the failure does not permit changes that could overwrite or destroy the existing saved task data.
+6. **Given** a first-time user without an account, **When** they register, **Then** they can obtain a private account and sign in without requiring an invitation or administrator provisioning.
 
 ### Edge Cases
 
-- A title consisting only of whitespace is rejected as missing.
-- A due date in the past is retained and does not prevent task creation or editing; it is visibly
-  identified as overdue only while the task is active.
-- A deleted task cannot be recovered through the task manager.
-- When no tasks match the selected filters, the user sees an empty-state message rather than stale
-  results.
-- If saved task data cannot be loaded, the user is informed that their saved tasks are unavailable,
-  can retry loading, and cannot change task data until the prior data loads successfully.
+- A title containing only whitespace is rejected as missing.
+- An omitted description or due date remains absent; an omitted or cleared priority defaults to Medium.
+- A supplied invalid calendar due date is rejected; a valid past date is retained and is overdue only while the task is active.
+- A deleted task cannot be restored through the task manager.
+- When no tasks match the selected filters, the user sees an empty-state message rather than stale results.
+- Undated tasks sort last when Due Date is selected, whether earliest-first or latest-first.
+- If previously saved task data cannot be loaded, the user is told the task list is unavailable, can retry, is directed to support for persistent failures and cannot make task-data changes that could overwrite or destroy existing saved data while loading remains unresolved. No self-service data reset is provided.
 
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
 
-- **FR-001**: The system MUST let a user create an active task only after providing a non-empty
-  title, description, priority, and valid calendar-date due date.
-- **FR-002**: The system MUST support exactly three task priorities: low, medium, and high.
-- **FR-003**: The system MUST display each task's title, description, priority, calendar-date due
-  date, and completion status in the task list or task detail view.
-- **FR-004**: The system MUST let a user edit the title, description, priority, and due date of an
-  existing task, subject to the same validation used for creation.
-- **FR-005**: The system MUST let a user mark an active task as complete, reopen a completed task
-  as active while preserving its details, and distinguish completed tasks from active tasks.
-- **FR-006**: The system MUST let a user permanently delete a task only after an explicit
-  confirmation; a deleted task cannot be restored.
-- **FR-007**: The system MUST let a user filter the displayed task list by status (all, active,
-  or completed) and by priority (all, low, medium, or high), applying both filters together.
-- **FR-008**: The system MUST preserve created, edited, completed, and deleted task state between
-  sessions for the same user on the same device.
-- **FR-009**: The system MUST provide clear feedback when a create, edit, completion, deletion, or
-  saved-data loading action cannot be completed.
-- **FR-010**: The system MUST operate without sign-in, accounts, shared task lists, or any other
-  multi-user capability.
-- **FR-011**: The system MUST accept a past calendar-date due date and visibly identify an active
-  task with that date as overdue; a completed task is not overdue, but becomes overdue if reopened
-  while its due date remains past.
-- **FR-012**: The system MUST preserve the user's most recently selected status and priority filters
-  between sessions and apply both restored filters when displaying the task list.
-- **FR-013**: The system MUST display matching tasks by ascending calendar-date due date, then by
-  priority from high to low for the same date, and then by earlier creation time for the same date
-  and priority.
-- **FR-014**: If saved task data cannot be loaded, the system MUST show an error and a retry action,
-  prevent all task-data changes until loading succeeds, and never overwrite unreadable saved data.
+- **FR-001**: The system MUST allow a signed-in user to create an active task with a non-empty, non-whitespace title; description, priority and calendar-date due date MUST be optional. A supplied due date MUST be a valid calendar date, with no time component.
+- **FR-002**: The system MUST support exactly three effective task priorities (Low, Medium and High) and MUST assign Medium when priority is omitted on creation or cleared during editing.
+- **FR-003**: The system MUST display each task's title, effective priority and completion status, and display its description and calendar-date due date when provided, in the task list or task detail view. It MUST NOT fabricate a description or due date when absent.
+- **FR-004**: The system MUST permit editing an existing task's title, description, priority and due date using the creation validation rules; the description and due date may be cleared, and clearing priority MUST restore the Medium default.
+- **FR-005**: The system MUST let a user mark an active task as complete, reopen a completed task as active while preserving its task details, and distinguish completed tasks from active tasks.
+- **FR-006**: The system MUST permanently delete a task only after the user explicitly confirms deletion; a deleted task cannot be restored through the task manager.
+- **FR-007**: The system MUST support combined filtering of the displayed task list by status (All, Active or Completed) and priority (All, Low, Medium or High).
+- **FR-008**: The system MUST preserve successfully saved task creation, edits, status changes and deletions across sessions and synchronise the same account's task data across desktop and mobile browsers/devices. Successfully saved changes MUST become available to that account on other devices after synchronisation.
+- **FR-009**: The system MUST provide clear feedback when task creation, editing, completion/reopening, deletion, synchronisation or saved-data loading cannot be completed.
+- **FR-010**: The system MUST provide private user accounts and sign-in. Signing in to the same account on different browsers or devices MUST provide access to that account's personal task list; task data MUST NOT be accessible through another account. Task-list sharing and collaboration are out of scope.
+- **FR-011**: The system MUST accept valid past calendar-date due dates and visibly identify active tasks with dates before the current calendar date as overdue; completed tasks MUST NOT appear overdue, but MUST become overdue when reopened if their due dates remain past. Tasks without a due date MUST NOT appear overdue.
+- **FR-012**: The system MUST restore the user's most recently selected status and priority filters between sessions and apply both restored filters when displaying tasks. Cross-device filter-preference synchronisation is not specified at Scope.
+- **FR-013**: The system MUST let users sort the filtered task list by **Due Date, Priority, Date Created or Title**, each in both directions (Due Date: earliest/latest; Priority: High–Low/Low–High; Date Created: newest/oldest; Title: A–Z/Z–A). On first use, the default MUST be Due Date, earliest first. In either Due Date direction, tasks with no due date MUST appear last. **When the selected sort method is Due Date**, tasks sharing a due date MUST be ordered by higher priority first, then earlier-created tasks for identical priority; remaining tie cases and sort-preference restoration are owned by Functional Design.
+- **FR-014**: If previously saved tasks cannot be loaded, the system MUST inform the user, provide a retry opportunity, direct the user to support if the failure persists and prevent task-data changes that could overwrite or destroy existing saved task data while the loading failure remains unresolved. A user-facing saved-data reset feature is not included.
+- **FR-015**: The first release MUST be accessible as a web application through desktop and mobile browsers. Native desktop and mobile applications are excluded from this release; offline operation is not a required guarantee.
+- **FR-016**: The system MUST permit first-time users to self-register a private account without invitation or administrator provisioning, so they can sign in and access their personal task list.
 
 ### Key Entities *(include if feature involves data)*
 
-- **Task**: A personal work item with a title, description, priority, due date, completion status,
-  and a stable identity used to update or delete it.
-- **Task Filter**: The selected status and priority criteria that determine which tasks are shown;
-  it does not alter the underlying tasks.
+- **User Account**: A private identity that a first-time user can self-register without invitation or administrator provisioning, used for sign-in, owning one personal task list and authorising access to that list across browsers and devices.
+- **Task**: A personal work item belonging to one user account, with a stable identity, required title, optional description and calendar-date due date, one effective priority (Low/Medium/High), completion status and recorded creation order/date for sorting.
+- **Task Filter**: Selected status and priority criteria determining which account-owned tasks appear; filtering does not change the tasks.
+- **Task Sorting**: The selected sorting method and direction for displaying filtered tasks; sorting does not change the tasks.
 
 ## Acceptance Criteria
 
-- **AC-001**: Given a completed task with recorded details, when the user reopens it, then it is
-  visible in the active-task view with the same title, description, priority, and due date (Round
-  1, Q1).
-- **AC-002**: Given a task form, when the user enters a calendar date without a time of day and
-  saves valid remaining details, then the task is created with that calendar date as its due date
-  (Round 2, Q1).
-- **AC-003**: Given a task, when the user confirms deletion, then it is absent from every task view
-  and no restore action is available (Round 3, Q1).
-- **AC-004**: Given an active task whose due date is before the current calendar date, when the user
-  views it, then the task remains available and is visibly identified as overdue; after it is
-  completed, the overdue label is absent, and it returns if the task is reopened (Rounds 4 and 9,
-  Q1).
-- **AC-005**: Given selected status and priority filters, when the user starts a new session, then
-  the same filters are applied and only matching tasks are displayed (Round 5, Q1).
-- **AC-006**: Given matching tasks due on 2026-10-19, 2026-10-21, and 2026-10-30, when the user
-  views the task list, then they appear in that earliest-to-latest order (Round 6, Q1).
-- **AC-007**: Given two tasks due on 2026-10-21 and both at medium priority, when one was created
-  earlier, then it appears first; a high-priority task due on 2026-10-21 appears before both
-  medium-priority tasks (Round 7, Q1).
-- **AC-008**: Given unreadable saved task data, when the user opens the task manager, then an error
-  and retry action are displayed and task-data changes remain unavailable until loading succeeds
-  (Round 8, Q1).
+- **AC-001**: Given a completed task, when the user reopens it, then it appears as active with its title and any provided description, priority and due date unchanged.
+- **AC-002**: Given a valid title and no other values, when the signed-in user saves, then an active task is created with Medium priority and no due date or description; if the user supplies a valid calendar due date without a time of day, that date is retained.
+- **AC-003**: Given a task, when the user confirms deletion, then it disappears from every task view and no restore action is available.
+- **AC-004**: Given an active task whose due date precedes the current calendar date, when the user views it, then it is visibly overdue; once completed, the overdue label is absent, and it returns if the task is reopened while the date remains past. A task with no due date is not overdue.
+- **AC-005**: Given selected status and priority filters, when the user starts a new session, then the same filters are applied and only matching tasks are shown. Cross-device preference synchronisation remains for Functional Design.
+- **AC-006**: Given tasks due on 2026-10-19, 2026-10-21, and 2026-10-30, when first-use default sorting is applied, then they appear in earliest-to-latest order; undated tasks appear afterwards. When Due Date sorting is reversed, the dated tasks reverse but undated tasks remain last.
+- **AC-007**: Given **Due Date** sorting is selected and multiple tasks share a due date, a higher-priority task appears before lower-priority tasks; among tasks sharing that date and priority, the earlier-created task appears first. Other tied-value behaviour is defined during Functional Design.
+- **AC-008**: Given saved tasks that fail to load, when the account owner opens the app, then an error and retry opportunity are presented; if failure persists, support guidance is available and changes capable of overwriting or destroying existing saved data are blocked. No self-service reset is offered.
+- **AC-009**: Given an account that has saved tasks on a desktop browser, when the same user signs in on a mobile browser and synchronisation completes, then those tasks and their successfully saved changes are available with correct details and status.
+- **AC-010**: Given two distinct signed-in accounts, when either user accesses the app, then neither can view or modify the other's personal tasks.
+- **AC-011**: Given multiple tasks, when a user selects any of the four supported sorting methods in either direction, then the resulting primary order matches that selection, subject to the approved due-date handling.
+- **AC-012**: Given a first-time user without an account, when they register, then they can obtain a private personal account and sign in without an invitation or administrator provisioning.
 
 ## Success Criteria *(mandatory)*
 
-### Measurable Outcomes
+### Observable Outcomes
 
-- **SC-001**: A user can create a fully detailed task in 60 seconds or less in a usability test.
-- **SC-002**: In a test list of 1,000 tasks, applying a status or priority filter updates the
-  displayed results within 2 seconds for at least 95% of attempts.
-- **SC-003**: At least 90% of usability-test participants can create, edit, complete, delete, and
-  filter a task without assistance on their first attempt.
-- **SC-004**: After ending and resuming a session, 100% of successfully saved task changes in the
-  acceptance test set are available with the correct details and status.
+- **SC-004**: Successfully saved task changes remain available with their correct details and statuses across later sessions and, after synchronisation, across browsers and devices signed in to the same account.
 
-## Assumptions
+The draft numerical targets previously labelled SC-001 (60-second task creation), SC-002 (2-second filtering for 95% of attempts) and SC-003 (90% unaided usability) were **not approved** and are removed from the active success criteria under DEC-R1-007-FINAL. Their history is retained in `scope_review_report.md`. Detailed verification methods are owned by Test.
 
-- The first release serves one person using one device and one local task list; task sharing,
-  synchronization, and accounts are out of scope.
-- Title, description, priority, and due date are all required because each is described as a task
-  attribute in the feature request.
-- A due date records a calendar date, not a time of day.
-- Tasks are initially active; a completed task can be reopened as active without changing its other
-  details.
-- The task list initially shows all tasks; after the user changes either filter, the selected filters
-  are restored in later sessions.
+## Assumptions and Exclusions
+
+- First-time users can self-register private accounts without invitations or administrator provisioning. Each user signs in to access their personal task list; account-specific tasks persist and synchronise across signed-in browsers and devices. Remote storage and transmission are permitted, but cross-user access and task sharing/collaboration are excluded.
+- This release supports desktop and mobile browsers as a web application, not native desktop or mobile apps. No offline-operation guarantee is specified.
+- The title is the only mandatory user-entered task attribute. An absent description or due date stays absent; an omitted or cleared priority defaults to Medium.
+- Due dates are calendar dates with no time of day. Past due dates are allowed, and only active tasks with passed due dates are overdue.
+- Newly created tasks are active; completed tasks may be reopened without changing their details. Deletion requires confirmation and offers no in-application restore.
+- Initial filters show All statuses and All priorities; most recently selected status/priority filters are restored in later sessions. Their cross-device restoration behaviour is deferred to Functional Design.
+- Initial task ordering is Due Date (earliest first), with undated tasks last for either due-date direction. Users may choose the four approved sorting methods and reverse each; additional tie-breaking and sorting-preference restoration belong to Functional Design.
+- If previously saved tasks fail to load, the app provides error/retry/support guidance while protecting saved data against overwriting or destruction. The earlier proposed self-service data reset is superseded and excluded.
