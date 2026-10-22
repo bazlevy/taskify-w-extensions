@@ -60,14 +60,14 @@ Review sources: [plan](../plan.md), [design decisions](../research.md), [data mo
 
 ## Non-Functional Requirements
 
-- [ ] CHK027 Are privacy requirements documented for account-owned tasks, session boundaries, retained browser preferences and information included in errors/support references? [Completeness, Spec §FR-010, §AC-010; Research §2, §7–§8; Interaction Contract §Synchronisation and privacy]
+- [ ] CHK027 Are privacy requirements documented for account-owned tasks and filter preferences, session boundaries, and information included in errors/support references? [Completeness, Spec §FR-010, §AC-010; Research §2, §7–§8; Interaction Contract §Synchronisation and privacy]
 - [ ] CHK028 Are desktop/mobile compatibility and responsive-use requirements bounded by named browser families, an explicit version-selection policy and assessable layout constraints? [Clarity, Spec §FR-015; Plan §Technical Context; Interaction Contract §Screens and navigation]
 - [ ] CHK029 Are accessibility requirements defined for labels, keyboard operation, focus, error associations and non-color status distinctions across forms and recovery interactions? [Coverage, Spec §FR-003, §FR-009, §FR-015; Interaction Contract §Screens and navigation]
 - [ ] CHK030 Are performance/availability statements consistent with the removal of SC-001–SC-003, clearly distinguishing design configuration and observed measurements from approved success guarantees? [Consistency, Spec §Success Criteria, §DEC-R1-007-FINAL; Plan §Technical Context]
 
 ## Dependencies & Assumptions
 
-- [ ] CHK031 Are connectivity, browser capability and preference-storage assumptions explicit, including requirements for unavailable preference storage without weakening task persistence guarantees? [Assumption, Completeness, Spec §FR-008, §FR-012, §FR-015, §Assumptions and Exclusions; Research §7]
+- [ ] CHK031 Are connectivity, browser capability and account-backed preference assumptions explicit, including server-save uncertainty, reconciliation, and version-conflict handling without weakening task persistence guarantees? [Assumption, Completeness, Spec §FR-008, §FR-012, §FR-015, §Assumptions and Exclusions; Research §7]
 - [ ] CHK032 Is the support dependency defined with a responsible contact/configuration source and criteria for resolving missing support details before release? [Dependency, Gap, Spec §FR-014; Plan §Technical Context; Research §5]
 - [ ] CHK033 Are responsibilities and recovery expectations documented for persistent-storage failure, interrupted changes and migration failure without authorising a user-facing saved-data reset? [Dependency, Gap, Spec §FR-008, §FR-014; Plan §Delivery and Verification Boundaries; Constitution §V]
 

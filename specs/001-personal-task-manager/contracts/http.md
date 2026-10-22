@@ -6,15 +6,20 @@ Internal same-origin interface for the web application. All paths are relative t
 
 | Method/path | Behavior |
 |---|---|
-| GET /accounts/register/ | Username/password/confirmation form with CSRF token |
+| GET /accounts/register/ | Username/password/confirmation form with CSRF token and no-recovery disclosure |
 | POST /accounts/register/ | Validate and create private account plus list state atomically; 302 to sign-in on success; 200 form with field errors on failure |
-| GET /accounts/login/ | Sign-in form; link to registration and support |
+| GET /accounts/login/ | Sign-in form; link to registration and a forgotten-credentials support explanation |
 | POST /accounts/login/ | Standard Django auth form; 302 to /tasks/ on success; 200 generic credential error on failure |
 | POST /accounts/logout/ | CSRF-protected session logout; 302 to login; GET must not log out |
 | GET /tasks/ | Authenticated responsive task shell with public account UUID and CSRF token; anonymous requests redirect to login |
-| GET /support/ | Support instructions and configured contact; accepts optional nonsensitive request reference; no data reset or automatic password reset |
+| GET /support/ | Support instructions and configured contact; accepts optional nonsensitive request reference; no data reset, password reset/recovery, or account transfer |
 
-Use Django's validated same-origin next handling, not arbitrary redirects. Rejected registration identifies invalid/duplicate username or invalid password/confirmation without creating a partial account. Login failures do not reveal account existence. Production proxy throttling applies to registration and login.
+Use Django's validated same-origin next handling, not arbitrary redirects. Registration displays that
+forgotten credentials cannot be recovered in this release before account creation. Rejected
+registration identifies invalid/duplicate username or invalid password/confirmation without
+creating a partial account. Login failures do not reveal account existence. Forgotten-credentials
+and support text must state that support cannot reset credentials or transfer account access.
+Production proxy throttling applies to registration and login.
 
 ## Common JSON rules
 
@@ -71,6 +76,37 @@ The response contains the complete matching set at its revision. total_count cou
 
 Clients validate response identity, query, full schema and revision before accepting it. Discard wrong-session, wrong-query or older-generation responses, revisions below the latest accepted revision, and revisions below the latest acknowledged mutation. Different query results may legitimately have equal revisions.
 
+## Filter preferences
+
+GET /api/preferences/filters/ returns the authenticated account's authoritative saved preference:
+
+```json
+{"status":"all","priority":"all","version":"1"}
+```
+
+On a first authenticated session, the server-created record returns All/All at version 1. The task
+shell retrieves this response before its first task snapshot and then requests that snapshot with
+the returned filters.
+
+PUT /api/preferences/filters/ requires `status`, `priority`, and positive decimal
+`expected_version`. It validates the two enums, locks the account's preference record, and returns
+the newly saved pair/version with 200. The selection counts as persisted only after this response
+or after a later authoritative GET returns the same pair. The browser submits one PUT at a time;
+if controls change while one is in flight, it retains only the latest desired pair and sends it
+after the preceding acknowledgement establishes the next expected version.
+
+When `expected_version` is stale, return 409 `preference_version_conflict` with the current
+authoritative `status`, `priority`, and `version`; do not overwrite it. This is a confirmed
+rejection of the submitted version, not evidence of a different device. On a 409, transport
+failure, malformed response, or 5xx, the browser MUST label the current selection "Could not
+confirm your filters were saved", pause queued PUTs, and GET the authoritative preference before
+offering a re-save. If that GET matches the current selection, mark it saved. If it differs, keep
+the current-page selection visible but unconfirmed and require explicit user approval before a new
+PUT uses the re-read version. Client request generations associate replies with the selection that
+produced them: stale/out-of-order replies cannot regress the last confirmed version or replace a
+newer visible selection. Preference updates do not mutate task data and do not increment task-list
+revision.
+
 ## Mutations
 
 All mutations are POST. One logical operation uses one operation_id UUID, preserved with the exact submitted request for retries. Create also retains one task UUID. Commands are validated/canonicalized before receipt digest comparison; default-equivalent omitted/null/empty optional values canonicalize identically. Include kind/route, task ID and expected version in the digest. Ownership is always derived from the authenticated session.
@@ -116,8 +152,13 @@ Acquire account-state lock first, then check owner-scoped receipt, then task. Re
 | New create UUID already occupied | 409 task_id_unavailable | No mutation; generic response revealing no owner; no blind retry |
 | Server/database unavailable | 503 service_unavailable when possible | Clear failure feedback; unknown outcome unless known rollback is explicitly established |
 | Throttled | 429 rate_limited | Preserve form; Retry-After where available |
-| Timeout/broken or malformed response | Transport/unknown | Retain exact pending operation, lock other writes, recover using same operation |
+| Timeout/broken or malformed response | Transport/unknown | Retain exact pending operation in memory, lock all task writes; retry only after a valid saved-task snapshot |
 
 Receipt lookup precedes existence/version checks for valid replay. A committed create replay after remote deletion succeeds historically and never recreates the task. Conflicting edits/deletes never silently overwrite current data. Validation or server failure before commit leaves task, revision and receipt unchanged.
 
-A retry may replay the same pending mutation while ordinary mutations are locked. This is the sole recovery exception to the UI lock. Refresh success alone cannot prove whether a pending operation committed; receipt-backed replay settles it. If recovery still fails, remain locked and direct the user to support. No endpoint replaces the whole list or resets saved data.
+While a saved-task load or refresh failure remains unresolved, the client MUST NOT submit any task
+mutation, including an exact replay of a pending operation. A valid saved-task snapshot lifts that
+load-failure lock but does not settle the pending operation; only then may the client replay the
+same operation ID and unchanged payload, subject to receipt, ownership, and version checks. If
+recovery fails, remain locked and direct the user to support. No endpoint replaces the whole list
+or resets saved data.

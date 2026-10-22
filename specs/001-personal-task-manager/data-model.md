@@ -6,11 +6,13 @@ See [research.md](research.md) for decisions and [contracts/http.md](contracts/h
 
 ### User Account — accounts.User
 
-Minimal Django AbstractUser subclass configured as AUTH_USER_MODEL before the initial migration. Standard fields include primary key, unique username, password hash, active flag and creation metadata. Add an immutable unique UUID `public_id` for browser preference namespacing; internal numeric IDs need not be exposed.
+Minimal Django AbstractUser subclass configured as AUTH_USER_MODEL before the initial migration. Standard fields include primary key, unique username, password hash, active flag and creation metadata. Add an immutable unique UUID `public_id` as the opaque account identifier returned in authenticated snapshots; internal numeric IDs need not be exposed.
 
 Registration accepts username/password/confirmation through Django validation. Reject case-insensitive username collisions, including concurrent registration, with a database uniqueness constraint on Lower(username) as well as application validation. No invitation or email is required. Password values never enter logs or task DTOs. Accounts are never accepted from client-submitted ownership fields.
 
-Relationships: one account owns one TaskListState, zero or more Tasks, zero or more MutationReceipts and database-backed sessions. Use Django's supported session model/storage rather than a custom session entity.
+Relationships: one account owns one TaskListState, one TaskFilterPreference, zero or more Tasks,
+zero or more MutationReceipts and database-backed sessions. Use Django's supported session
+model/storage rather than a custom session entity.
 
 ### TaskListState
 
@@ -22,6 +24,27 @@ Relationships: one account owns one TaskListState, zero or more Tasks, zero or m
 Create with the account in the same registration transaction. No separate user-visible list record, list name or list-management interface.
 
 Every task snapshot and mutation locks this row first. A snapshot copies owned rows and revision under the lock; sorting/serialization happen after release. Mutations check the receipt, validate version, change the task, increment revision and record the receipt under one atomic transaction. Replays do not increment revision. All operations follow account-state → receipt → task lock order.
+
+### TaskFilterPreference
+
+One account-owned record, created with the account in the registration transaction.
+
+| Field | Type | Rules |
+|---|---|---|
+| owner_id | User FK, primary key / one-to-one | Required, unique, indexed |
+| status | text enum | all, active, completed; starts all |
+| priority | text enum | all, low, medium, high; starts all |
+| version | bigint | Positive; starts at 1; increments once per accepted preference save |
+| updated_at | timestamptz | Server-generated UTC instant on accepted preference save |
+
+Preference updates lock this record and require its displayed version. A stale update returns the
+authoritative saved pair and version without mutation. Preference records are independent of task
+list revision and task-mutation receipts: saving filters never modifies task data and does not
+relax the task-write lock during a saved-task load failure. The browser records the latest confirmed
+pair/version separately from its current visible pair. It sends one preference update at a time;
+later user selections replace a single queued desired pair. A confirmed acknowledgement advances
+the confirmed version. A rejected or outcome-unknown update requires an authoritative re-read
+before any new overwrite attempt; a lower-version or stale client-generation response is ignored.
 
 ### Task
 
@@ -68,7 +91,11 @@ Account deletion is not exposed by this feature. Any future operational account 
 
 ### Task Filter
 
-Status: all, active, completed. Priority: all, low, medium, high. Combine predicates with AND. A filter never mutates tasks. Stored in a versioned browser key scoped by public account UUID. Defaults All/All; validate restored values.
+Status: all, active, completed. Priority: all, low, medium, high. Combine predicates with AND. A
+filter never mutates tasks. The authoritative selected pair and preference version are persisted in
+the account's TaskFilterPreference record; defaults are All/All. The current page may display an
+unconfirmed attempted pair after a failed or outcome-unknown preference save, but only an
+acknowledged or re-read matching record restores on later sessions/devices.
 
 ### Task Sorting
 
@@ -96,9 +123,14 @@ Acknowledgement: operation ID, kind, task ID, committed version (null for delete
 | ready | Read/filter/sort/create/edit/status/delete-confirm | Submit → writing; failed refresh → load_error |
 | writing | One operation pending; block other writes | Ack → refreshing; definite rejection → ready/conflict; uncertain response → outcome_unknown |
 | refreshing | Await snapshot at least as new as acknowledged revision | Success → ready; failure → load_error |
-| load_error | Stale/empty-unavailable view, retry/support; no ordinary task writes | Valid snapshot → ready unless pending unknown operation remains |
-| outcome_unknown | Preserve exact request/draft; retry same operation only | Historical ack → refreshing; definitive rejection → conflict/ready; failed recovery → remain locked |
+| load_error | Stale/empty-unavailable view, retry/support; no task writes, including pending-operation retries | Valid snapshot → ready, or → outcome_unknown when a pending unknown operation remains |
+| outcome_unknown | Preserve exact request/draft; after a valid snapshot, permit only an exact same-ID/payload retry | Historical ack → refreshing; definitive rejection → conflict/ready; read failure → load_error; failed recovery → remain locked |
 | conflict | Preserve draft; show current task/deletion; no blind resubmit | Refresh/review → new explicit operation with current version, or cancel |
 | signed_out | Hide/clear task data and drafts | Authenticate and new generation → loading |
 
-Read failures never replace saved data with an empty list. The mutation lock is a UI safety measure; server endpoints always perform validation, ownership and version checks independently. UI state cannot establish an absolute global freshness guarantee across devices; task versions protect concurrent changes.
+Read failures never replace saved data with an empty list. While loading is unresolved, the UI must
+not submit any task mutation, including a retry that might be the first server-observed operation.
+After a valid snapshot, an exact retry remains subject to receipt and version checks. The mutation
+lock is a UI safety measure; server endpoints always perform validation, ownership and version
+checks independently. UI state cannot establish an absolute global freshness guarantee across
+devices; task versions protect concurrent changes.

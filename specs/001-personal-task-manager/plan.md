@@ -17,7 +17,9 @@ Design decisions delegated by Scope are resolved in [research.md](research.md). 
 
 **Primary Dependencies**: Django 5.2 LTS, Psycopg 3, Gunicorn for production. Exact maintained patches locked during implementation. No SPA, separate auth provider, task queue or WebSocket service.
 
-**Storage**: PostgreSQL 17, maintained patch, for users, sessions, tasks, account list revisions and durable operation receipts. Account-scoped browser localStorage for filters only; no stored task data or credentials.
+**Storage**: PostgreSQL 17, maintained patch, for users, sessions, tasks, account list revisions,
+durable operation receipts, and account-owned filter preferences. Browser storage holds no task
+data, credentials, pending operations, or preferences.
 
 **Testing**: pytest, pytest-django and pytest-playwright; pure domain tests, real-PostgreSQL integration/concurrency tests, HTTP contract tests and browser journeys.
 
@@ -27,7 +29,14 @@ Design decisions delegated by Scope are resolved in [research.md](research.md). 
 
 **Performance Goals**: No approved numeric latency, task-count or usability thresholds. Visible-page polling every 15 seconds is an adjustable design parameter, not an SLA. Record observed timings/list sizes; do not reinstate removed SC-001–SC-003.
 
-**Constraints**: Ownership enforced for every read/write; successfully committed changes persist and converge across devices. Date-only due dates. Failed load/refresh blocks task mutations until authoritative refresh succeeds. A write is acknowledged only after commit. No offline guarantee, sharing, native apps, saved-data reset or user-facing restore.
+**Constraints**: Ownership enforced for every read/write; successfully committed changes persist and
+converge across devices. Date-only due dates. Failed load/refresh blocks every task-mutation
+submission, including uncertain-operation retries, until an authoritative refresh succeeds. A
+write is acknowledged only after commit. Account-owned filter preferences restore across sessions
+and devices with explicit version-conflict handling. No offline guarantee, sharing, native apps,
+saved-data reset, user-facing restore, password recovery, or account transfer. Pending-operation
+recovery is memory-only; browser interruption can lose its identity and leave a duplicate or delayed
+mutation risk, as an accepted limitation.
 
 **Scale/Scope**: One logical list per account. Complete filtered snapshots without pagination initially; maximum accounts/list size unspecified. One application service plus database. Production support contact is a required release configuration input.
 
@@ -89,7 +98,7 @@ tests/
 └── e2e/
 ```
 
-**Structure Decision**: One Python project keeps deployment and auth simple. Register `accounts` and `taskify.persistence` as Django apps. Composition in `config` supplies ORM adapters to services. Browser calendar and preferences modules are separated from DOM rendering. Use Django's supported forms/session infrastructure for authentication.
+**Structure Decision**: One Python project keeps deployment and auth simple. Register `accounts` and `taskify.persistence` as Django apps. Composition in `config` supplies ORM adapters to services. Browser calendar and preference-transport modules are separated from DOM rendering. Use Django's supported forms/session infrastructure for authentication.
 
 ## Delivery and Verification Boundaries
 

@@ -12,11 +12,11 @@
 
 ## 2. Authentication and ownership
 
-**Decision**: Self-register with username, password and confirmation. Declare a minimal AbstractUser subclass before the first migration. Use a UserCreationForm subclass with standard username/password validation and case-insensitive duplicate rejection; retain Django's username matching on login. Redirect registration success to sign-in. Use LoginView, POST LogoutView and database-backed sessions. Email is not required. Forgotten credentials link to support; automated password reset is not included.
+**Decision**: Self-register with username, password and confirmation. Declare a minimal AbstractUser subclass before the first migration. Use a UserCreationForm subclass with standard username/password validation and case-insensitive duplicate rejection; retain Django's username matching on login. Redirect registration success to sign-in. Use LoginView, POST LogoutView and database-backed sessions. Email is not required. The registration form warns that forgotten credentials cannot be recovered. Forgotten-credentials and support views state that the first release provides no automated or manual password reset, credential recovery, or account transfer; support may answer questions only.
 
 **Rationale**: These supported building blocks meet private self-registration without email/provider dependencies. Every task repository method requires authenticated owner identity; unknown and foreign IDs return indistinguishable 404 responses. Django model permissions alone do not enforce object ownership. [Auth views/forms](https://docs.djangoproject.com/en/5.2/topics/auth/default/), [Custom user models and object permissions](https://docs.djangoproject.com/en/5.2/topics/auth/customizing/), [Sessions](https://docs.djangoproject.com/en/5.2/topics/http/sessions/).
 
-**Alternatives considered**: Federated/email login adds dependencies without a Scope need. Anonymous accounts do not meet the account boundary. Built-in User is sufficient today but declaring the minimal subclass initially avoids later substitution.
+**Alternatives considered**: Federated/email login adds dependencies without a Scope need. Anonymous accounts do not meet the account boundary. Password recovery would require an approved identity-verification policy and channel that this release does not have. Built-in User is sufficient today but declaring the minimal subclass initially avoids later substitution.
 
 ## 3. Authoritative snapshots and synchronisation
 
@@ -28,7 +28,7 @@
 
 ## 4. Conflict and uncertain-write recovery
 
-**Decision**: Every mutation carries a stable operation UUID; creation also has a stable task UUID. Commit the mutation, list revision increment and durable receipt atomically. Check receipt before task existence/version. Identical replay returns its historical acknowledgement; a different payload with the same key returns conflict. Receipts retain metadata/digests, not task contents, for the account lifetime. Require expected task version on edit, status change and delete; reject stale versions with 409. No automatic merge.
+**Decision**: Every mutation carries a stable operation UUID; creation also has a stable task UUID. Commit the mutation, list revision increment and durable receipt atomically. Check receipt before task existence/version. Identical replay returns its historical acknowledgement; a different payload with the same key returns conflict. Receipts retain metadata/digests, not task contents, for the account lifetime. Require expected task version on edit, status change and delete; reject stale versions with 409. No automatic merge. A retry capable of committing a task mutation is permitted only after a valid saved-task snapshot has loaded; it uses the same operation ID and unchanged payload, subject to the normal receipt and version checks.
 
 **Rationale**: A UUID alone cannot prevent resurrection when a create commits, its response is lost, another device deletes the task and the first retries. A receipt proves the old create already happened. A timeout does not prove rollback. Keep the exact payload/key for explicit retry, then refresh current state; a historical receipt is not a current task representation. [PostgreSQL isolation](https://www.postgresql.org/docs/17/transaction-iso.html), [Fetch status/error handling](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API/Using_Fetch).
 
@@ -36,9 +36,9 @@
 
 ## 5. Errors, drafts and support
 
-**Decision**: Disable task mutations until initial load succeeds. Any later refresh failure preserves a visibly stale snapshot and locks mutations until refresh succeeds. Show Retry and support guidance immediately; after a second consecutive failure explicitly recommend support. No reset action. Validation/definite rollback errors preserve drafts. Timeout, broken response or unclassified server error enters outcome-unknown; preserve the pending request in memory and reconcile by replaying its exact key/payload before allowing other mutations. A successful refresh alone does not resolve that pending operation.
+**Decision**: Disable task mutations until initial load succeeds. Any later refresh failure preserves a visibly stale snapshot and locks every new task-mutation submission, including a retry of an outcome-unknown operation, until a valid saved-task snapshot succeeds. Show Retry and support guidance immediately; after a second consecutive failure explicitly recommend support. No reset action. Validation/definite rollback errors preserve drafts. Timeout, broken response or unclassified server error enters outcome-unknown; preserve the pending request in memory. After a valid snapshot succeeds, the user may recover by replaying that exact key/payload; a successful snapshot alone does not resolve the pending operation.
 
-Do not replace open drafts during polling. Remote edit/deletion requires review or cancellation; never silently recreate. On session expiry/logout, hide and clear task views/drafts. A browser reload can discard an unsaved draft; subsequent snapshots reflect whatever actually committed.
+Do not replace open drafts during polling. Remote edit/deletion requires review or cancellation; never silently recreate. On session expiry/logout, hide and clear task views/drafts. Pending operation identity and payload exist only in browser memory: browser reload, close, crash, or navigation can discard them. An early snapshot after interruption is not proof that an earlier request rolled back; it may commit later. The UI warns users to wait for a confirmed result, and after interruption directs them to sign in/refresh and review the current list before re-entering an action. A repeated user attempt can create a duplicate or a delayed first mutation can later appear; this accepted residual risk has no durable pending-operation journal or exactly-once user-intent guarantee.
 
 **Rationale**: This distinguishes saved state from attempted state and protects existing data. A support page supplies the configured contact and request reference. Missing support configuration blocks release, not design.
 
@@ -56,11 +56,21 @@ Due Date ordering always places undated tasks last. Within each date, including 
 
 ## 7. Preferences
 
-**Decision**: Versioned localStorage keys include the account's opaque ID. Restore status/priority filters, defaulting All/All; invalid/corrupt values revert to defaults. Preferences do not sync across devices. Reset sort to Due Date earliest-first on each fresh page session. Logout clears in-memory state but retains account-scoped filter preferences for return visits. If storage is unavailable, show a restoration warning and keep session filtering usable.
+**Decision**: Persist status and priority filter preferences as an authenticated account-owned server record. On first use, the authoritative preference is All/All at version 1. The task shell retrieves it before the first task snapshot. Each user selection updates the visible filter immediately; the client sends at most one preference PUT at a time and retains only the newest later selection as queued work. A successful response confirms restoration across sessions/devices only when it acknowledges the current selection; an acknowledgement for an older selection advances the confirmed version and then sends the queued newest selection.
 
-**Rationale**: Scope mandates restoration while delegating cross-device behavior and sort persistence. Namespacing prevents applying one account's filters to another. No tasks/credentials enter this store.
+Concurrent device updates use optimistic preference versions. A 409 is a confirmed rejection of the
+submitted version, not evidence of which device caused it. A transport/5xx failure is an unknown
+save outcome, not proof that the preference was not saved. For either result, pause queued PUTs and
+re-read the authoritative pair/version. If the re-read pair equals the current visible selection,
+mark it saved; if it differs, retain the visible selection as unconfirmed and require explicit user
+approval before submitting a new PUT with the re-read version. Reconciliation reads and PUT replies
+carry client request generations; an outdated reply or lower-version re-read cannot replace a newer
+confirmed state or change the current visible selection. Reset sort to Due Date earliest-first on
+each fresh page session.
 
-**Alternatives considered**: Server preferences add writes without a cross-device requirement. A single shared browser key mixes accounts. Persisted sort is allowed but unnecessary.
+**Rationale**: Scope requires filter restoration without a browser-storage exception. Account-owned preferences restore on any authenticated device while optimistic versions, serial local writes, and authoritative reconciliation make conflicts and lost acknowledgements observable without a blind overwrite. No task contents, credentials, or preferences are stored in browser localStorage.
+
+**Alternatives considered**: Browser localStorage cannot satisfy restoration when storage is unavailable and cannot provide authoritative cross-device behavior. Last-write-wins would silently erase another device's selection. Persisted sort is allowed but unnecessary.
 
 ## 8. Security, schema and testing
 
@@ -72,4 +82,4 @@ Due Date ordering always places undated tasks last. Within each date, including 
 
 ## Resolution
 
-All design unknowns are resolved. Hostname, secrets and support contact are deployment inputs. No Scope amendment, application implementation or infrastructure provisioning occurred. Constitution gates pass before and after design; see [plan.md](plan.md).
+The R2 decisions FD-001 through FD-004 are incorporated in this functional design. The accepted browser-interruption and no-password-recovery limitations remain product risks rather than implementation claims. Hostname, secrets and support contact are deployment inputs. No Scope amendment, application implementation or infrastructure provisioning occurred. Constitution gates pass before and after design; see [plan.md](plan.md).
