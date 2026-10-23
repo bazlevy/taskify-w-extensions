@@ -2,6 +2,10 @@
 
 Internal same-origin interface for the web application. All paths are relative to the application origin. Session cookies authenticate requests; no caller-supplied account ID is accepted. See [../data-model.md](../data-model.md) and [ui.md](ui.md).
 
+**AM-001 revision, 2026-10-23:** Scope approved; changed Design awaits independent R2 review and
+human approval. The earlier R2-Rev3 account-preference contract remains historical, not current
+authority for these revised endpoints. Other task/auth contracts are retained.
+
 ## Pages and authentication
 
 | Method/path | Behavior |
@@ -11,7 +15,7 @@ Internal same-origin interface for the web application. All paths are relative t
 | GET /accounts/login/ | Sign-in form; link to registration and a forgotten-credentials support explanation |
 | POST /accounts/login/ | Standard Django auth form; 302 to /tasks/ on success; 200 generic credential error on failure |
 | POST /accounts/logout/ | CSRF-protected session logout; 302 to login; GET must not log out |
-| GET /tasks/ | Authenticated responsive task shell with public account UUID and CSRF token; anonymous requests redirect to login |
+| GET /tasks/ | Authenticated responsive task shell with public account UUID and CSRF token; bootstrap tasks directly, without a preference GET; anonymous requests redirect to login |
 | GET /support/ | Support instructions and configured contact; accepts optional nonsensitive request reference; no data reset, password reset/recovery, or account transfer |
 
 Use Django's validated same-origin next handling, not arbitrary redirects. Registration displays that
@@ -20,6 +24,12 @@ registration identifies invalid/duplicate username or invalid password/confirmat
 creating a partial account. Login failures do not reveal account existence. Forgotten-credentials
 and support text must state that support cannot reset credentials or transfer account access.
 Production proxy throttling applies to registration and login.
+
+Each successful explicit login starts a fresh view lifetime/defaults, including a repeated login
+as the same account. Other already-valid browser/device sessions are unaffected. Logout/expiry
+invalidates its view and pending view-save requests; no raw session key is exposed to the client.
+The session-key/invalidation guard is specified for R3 assessment in the data model, not a claim
+that browser or middleware races have been implemented or verified.
 
 ## Common JSON rules
 
@@ -45,9 +55,17 @@ Fields is an object, empty for non-field errors. References contain no task text
 
 ## Read snapshot
 
-GET /api/tasks/?status=all&priority=all&sort=due_date&direction=asc
+Bootstrap: GET /api/tasks/ (no query parameters).
 
-Defaults as shown. status: all/active/completed; priority: all/low/medium/high; sort: due_date/priority/created_at/title; direction: asc/desc. All filtering and ordering is executed by domain services using the deterministic rules in the data model.
+For bootstrap, use the complete valid view remembered in the current login, or all/all/due_date/asc
+if any view component is absent, invalid or unreadable. Do not warn or hold otherwise available
+tasks solely for view-state failure. After bootstrap, each refresh/poll/filter/sort request includes
+all four current page values, for example
+GET /api/tasks/?status=all&priority=all&sort=due_date&direction=asc. Explicit partial queries return
+400 validation_error; unknown fields or enum values are rejected. status: all/active/completed;
+priority: all/low/medium/high; sort: due_date/priority/created_at/title; direction: asc/desc. Domain
+services apply existing deterministic filtering/ordering. GET never remembers settings or writes
+defaults. View reads and task snapshots have independent transaction failure boundaries.
 
 200 response:
 
@@ -76,36 +94,40 @@ The response contains the complete matching set at its revision. total_count cou
 
 Clients validate response identity, query, full schema and revision before accepting it. Discard wrong-session, wrong-query or older-generation responses, revisions below the latest accepted revision, and revisions below the latest acknowledged mutation. Different query results may legitimately have equal revisions.
 
-## Filter preferences
+## Session view remembering — revised AM-001 contract
 
-GET /api/preferences/filters/ returns the authenticated account's authoritative saved preference:
+POST /api/session/view/ accepts exactly the full current view:
 
 ```json
-{"status":"all","priority":"all","version":"1"}
+{"status":"completed","priority":"high","sort":"title","direction":"desc"}
 ```
 
-On a first authenticated session, the server-created record returns All/All at version 1. The task
-shell retrieves this response before its first task snapshot and then requests that snapshot with
-the returned filters.
+The server derives the active session/owner from authentication; reject caller-supplied session,
+account IDs, expected_version and unknown fields. Require valid enums, CSRF and same-origin
+credentials. Atomic replacement affects only the current login's SessionViewState; successful 200
+returns the applied tuple after commit. No task version, list revision or mutation receipt changes.
+There is no account-preference GET/PUT bootstrap, preference version conflict, durable view retry
+journal, or cross-device view persistence. The old /api/preferences/filters/ routes are removed from
+the planned interface; no compatibility write to account preferences is specified.
 
-PUT /api/preferences/filters/ requires `status`, `priority`, and positive decimal
-`expected_version`. It validates the two enums, locks the account's preference record, and returns
-the newly saved pair/version with 200. The selection counts as persisted only after this response
-or after a later authoritative GET returns the same pair. The browser submits one PUT at a time;
-if controls change while one is in flight, it retains only the latest desired pair and sends it
-after the preceding acknowledgement establishes the next expected version.
+Client saves one tuple at a time and coalesces rapid later choices to the latest queued tuple.
+Explicit user choices in different tabs use last successful server commit order; the visible view
+in an existing tab never changes merely because another tab saved. On any save failure or lost/
+malformed reply, retain the current working selection silently. No view-error toast, retry dialog,
+automatic repeat of the uncertain tuple, or claim of successful restoration. A queued newer
+explicit selection may be submitted after the preceding request settles; no request means a promise
+that the shared state cannot subsequently be changed by a delayed earlier commit or another tab.
+A reply associated with an older selection/session cannot change newer controls or confirm that
+newer tuple. The next explicit change may attempt remembering again; refresh/new tabs use actual
+complete valid remembered settings or all four defaults.
 
-When `expected_version` is stale, return 409 `preference_version_conflict` with the current
-authoritative `status`, `priority`, and `version`; do not overwrite it. This is a confirmed
-rejection of the submitted version, not evidence of a different device. On a 409, transport
-failure, malformed response, or 5xx, the browser MUST label the current selection "Could not
-confirm your filters were saved", pause queued PUTs, and GET the authoritative preference before
-offering a re-save. If that GET matches the current selection, mark it saved. If it differs, keep
-the current-page selection visible but unconfirmed and require explicit user approval before a new
-PUT uses the re-read version. Client request generations associate replies with the selection that
-produced them: stale/out-of-order replies cannot regress the last confirmed version or replace a
-newer visible selection. Preference updates do not mutate task data and do not increment task-list
-revision.
+Errors keep the common envelope: 400 validation_error for a definite invalid tuple, 401 for absent/
+expired authentication, 403 for CSRF, and 503 where an unavailable save can be reported. Transport,
+5xx and malformed responses cannot prove rollback. View-only failures have no user warning and do
+not lock available task actions. Authentication failures always follow account clearing/sign-in
+rules; they cannot be suppressed as convenience errors. A normal task snapshot error still
+requires FR-014/FD-001 error/Retry/support and task-write protection. A view-save endpoint must not
+write authentication session data or resurrect an invalidated session. No GET writes state.
 
 ## Mutations
 

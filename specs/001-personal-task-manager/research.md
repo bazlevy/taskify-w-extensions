@@ -1,6 +1,6 @@
 # Research: Personal Task Manager
 
-**Date**: 2026-10-22. Authority: [spec.md](spec.md). These decisions resolve details explicitly delegated to Design. Repository inspection found no existing application stack. Two focused research agents checked authentication and synchronisation patterns against primary documentation.
+**Date**: 2026-10-23. Authority: [spec.md](spec.md), Scope 1.1 / AM-001 approved by Barry Levy in R1-Rev4 Section 8. This revision is an author-prepared Functional Design amendment awaiting targeted independent R2 review and human approval. R2-Rev3 remains historical approval of the previous design; no R3 approval is implied. Existing runtime, task ownership, calendar and task-mutation decisions below are retained.
 
 ## 1. Runtime and architecture
 
@@ -54,23 +54,57 @@ Due Date ordering always places undated tasks last. Within each date, including 
 
 **Alternatives considered**: UTC instants shift date-only values; reversing an entire list violates undated-last and fixed secondary rules; locale-sensitive title ordering varies between environments. This release chooses explicit locale-neutral order.
 
-## 7. Preferences
+## 7. Session view — AM-001 design amendment
 
-**Decision**: Persist status and priority filter preferences as an authenticated account-owned server record. On first use, the authoritative preference is All/All at version 1. The task shell retrieves it before the first task snapshot. Each user selection updates the visible filter immediately; the client sends at most one preference PUT at a time and retains only the newest later selection as queued work. A successful response confirms restoration across sessions/devices only when it acknowledges the current selection; an acknowledgement for an older selection advances the confirmed version and then sends the queued newest selection.
+**Decision (R2 review pending)**: Remember one complete tuple: status filter, priority filter, sort
+method and direction, scoped to the current authenticated browser login. Same-login refresh/new
+tabs restore the latest complete valid remembered tuple; existing tabs need not live-update. Each
+new login starts All/All/due_date/asc. Distinct valid sessions for the same account remember only
+their own view. Browser restart follows authentication validity, not a new view-expiry rule.
 
-Concurrent device updates use optimistic preference versions. A 409 is a confirmed rejection of the
-submitted version, not evidence of which device caused it. A transport/5xx failure is an unknown
-save outcome, not proof that the preference was not saved. For either result, pause queued PUTs and
-re-read the authoritative pair/version. If the re-read pair equals the current visible selection,
-mark it saved; if it differs, retain the visible selection as unconfirmed and require explicit user
-approval before submitting a new PUT with the re-read version. Reconciliation reads and PUT replies
-carry client request generations; an outdated reply or lower-version re-read cannot replace a newer
-confirmed state or change the current visible selection. Reset sort to Due Date earliest-first on
-each fresh page session.
+Bootstrap the task list directly with GET /api/tasks/ without view parameters. The server reads the
+session view on a best-effort basis and uses complete defaults for absent, missing, invalid or
+unreadable settings. It returns the chosen query with the task snapshot; no separate preference
+GET blocks startup. View restoration failure is silent. Authentication and task-load failures keep
+their existing errors/protections; no private access is permitted when authentication fails.
 
-**Rationale**: Scope requires filter restoration without a browser-storage exception. Account-owned preferences restore on any authenticated device while optimistic versions, serial local writes, and authoritative reconciliation make conflicts and lost acknowledgements observable without a blind overwrite. No task contents, credentials, or preferences are stored in browser localStorage.
+A selection immediately updates current controls and requests a matching snapshot. Independently,
+POST the complete tuple to /api/session/view/. One save per tab is in flight; later choices replace
+one queued tuple. Last successful server commit wins within that login, independent of browser
+clocks; one tab does not change another tab's current controls. Failed/unconfirmed remembering
+keeps the current selected view usable without any view warning, success claim, recovery dialog or
+automatic retry. The next explicit selection may submit the newest tuple. A lost response is not
+proof of rollback: a later page reads whichever complete valid tuple actually committed, else
+defaults. No preference version/409 reconciliation or cross-device view sync is retained.
 
-**Alternatives considered**: Browser localStorage cannot satisfy restoration when storage is unavailable and cannot provide authoritative cross-device behavior. Last-write-wins would silently erase another device's selection. Persisted sort is allowed but unnecessary.
+**Minimal mechanism selected for R3 evaluation**: Keep Django database-backed authentication;
+replace the account preference row with one small SessionViewState row keyed by the existing
+server-side Django session. It stores only the complete view/schema version, not task data. Avoid
+a new cache/service or browser persistence. Each explicit successful login creates a fresh session
+key/view lifetime even for the same account; logout/expiry invalidates it. View saves lock and
+revalidate the live session before replacing its row; old requests cannot recreate invalidated
+settings or carry them into the next login. See data-model and HTTP contracts for guard boundaries.
+
+**Rationale**: AM-001 makes task availability independent of view remembering and removes account
+preference complexity. A namespaced request.session tuple has fewer entities but stock Django
+SessionMiddleware writes the cached whole session after the view; a view-only lock cannot prevent
+a stale middleware save reverting the tuple. A session-bound settings row is a small replacement
+for the old account row and leaves normal auth/session serialization separate. This is a design
+selection for review, not a proven concurrency mechanism.
+
+**Evidence**: [Django sessions](https://docs.djangoproject.com/en/5.2/topics/http/sessions/),
+[SessionMiddleware](https://github.com/django/django/blob/stable/5.2.x/django/contrib/sessions/middleware.py),
+[database session backend](https://github.com/django/django/blob/stable/5.2.x/django/contrib/sessions/backends/db.py),
+and [login/logout source](https://github.com/django/django/blob/stable/5.2.x/django/contrib/auth/__init__.py).
+Focused Plan research found whole-session saves and same-account login retention require explicit
+handling. R3 must validate session lock ordering, deletion/rotation/expiry races, middleware saves
+and the rule that a failed convenience read cannot abort an otherwise valid task snapshot.
+
+**Alternatives considered**: A session namespace needs coordinated session merge/save logic;
+sessionStorage does not share a latest tuple across tabs; localStorage adds login cleanup and a
+broader lifetime; account-wide preferences conflict with AM-001. No existing application data is
+known to require migration. Discovery of deployed preference data requires a separate transition
+decision; no destructive conversion is authorised by this planning revision.
 
 ## 8. Security, schema and testing
 
@@ -82,4 +116,10 @@ each fresh page session.
 
 ## Resolution
 
-The R2 decisions FD-001 through FD-004 are incorporated in this functional design. The accepted browser-interruption and no-password-recovery limitations remain product risks rather than implementation claims. Hostname, secrets and support contact are deployment inputs. No Scope amendment, application implementation or infrastructure provisioning occurred. Constitution gates pass before and after design; see [plan.md](plan.md).
+AM-001 replaces only the old account-preference and fresh-page sort-restoration decisions. The
+previous FD-002/005 verification remains historical evidence for that baseline; truthful uncertainty
+and stale-response safety survive without view-state notifications. FD-001 and FD-003/004 remain
+intact. Revised R2 approval is pending; TD-001–007 remain OPEN, including TD-002 until reviewed.
+See [review handoff](review-followups/am001-r2-review-handoff.md) for risks, scenario mapping and gates.
+No implementation or infrastructure provisioning occurred; Plan re-evaluates constitution gates
+without certifying unresolved R3 mechanisms.

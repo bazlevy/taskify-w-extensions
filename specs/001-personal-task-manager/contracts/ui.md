@@ -2,6 +2,10 @@
 
 Scope: responsive desktop/mobile web application. See [http.md](http.md) for requests and [../data-model.md](../data-model.md) for state/ordering rules.
 
+**Revision:** AM-001 author reconciliation, 2026-10-23; targeted independent R2 review and human
+approval pending. Prior R2-Rev3 and accepted FD-003/004 risks remain historical authority for their
+unchanged decisions. Scope's silent view-state handling supersedes prior warning proposals.
+
 ## Screens and navigation
 
 Registration: username, password, confirmation, inline validation, sign-in link, and a conspicuous
@@ -33,24 +37,32 @@ still exist.
 ## Filters, sorting and calendar
 
 Status options: All, Active, Completed. Priority: All, Low, Medium, High. Combine with AND.
-Retrieve the authenticated account's saved status/priority pair before the initial task snapshot;
-the first-use saved pair is All/All. Apply each user selection immediately to the current page and
-save the pair to the account. Send one preference save at a time; when controls change rapidly,
-retain only the newest unsent pair and do not display an older acknowledgement as confirmation of
-the current selection. Confirm "saved across your devices" only after the server acknowledges the
-current pair or an authoritative re-read returns that pair.
+Bootstrap with the task snapshot directly; its effective query supplies all four controls. Restore
+the complete valid view remembered in this still-valid login. If any component is missing, invalid,
+incomplete or unreadable, use all four defaults silently: All/All/Due Date earliest first. Never
+require a separate preference request or hold available tasks for a view failure.
 
-On a preference transport/5xx/malformed-response outcome, say "Could not confirm your filters
-were saved"—never that they were not saved—and retain the visible selection. On a preference
-version conflict, say the submitted selection conflicted with a later saved preference, without
-attributing its origin to another device. In either case, pause further saves, re-read the
-authoritative pair/version, and compare it with the current visible pair. A match becomes saved; a
-difference remains visible but unconfirmed and requires explicit user approval to overwrite using
-the re-read version. Ignore stale/out-of-order save or re-read responses so they cannot replace a
-newer visible selection or lower the confirmed version. Do not use browser localStorage for
-preferences.
+Sort exactly by Due Date, Priority, Date Created or Title, with both directions. Restore method and
+direction with filters on same-login refresh/new tabs; reset all four only on new login or full
+view fallback. Label direction meaningfully for each method. Undated tasks stay last in either
+due-date direction. Fixed ties and locale-neutral title ordering follow the data model. No extra
+sort/search/tag features.
 
-Sort exactly by Due Date, Priority, Date Created or Title, with both directions. Reset to Due Date earliest-first on a fresh page session. Label direction meaningfully for each method. Undated tasks stay last in either due-date direction. Fixed ties and locale-neutral title ordering follow the data model. No extra sort/search/tag features.
+Apply every control choice immediately to the current tab and request matching task data while
+remembering its complete tuple independently. Allow one view save per tab; retain only the latest
+queued choice. Failed or unconfirmed remembering leaves the chosen controls/view usable without a
+save/restoration warning, success message or special Retry flow. Do not claim either failure or
+success as certain after a lost response. Later refresh/new tabs use what actually committed, else
+complete defaults; no guaranteed restoration of an unconfirmed selection. A delayed save reply
+cannot change a newer visible choice or falsely acknowledge it. New explicit choices may attempt
+remembering; no automatic retry of an uncertain old choice.
+
+Tabs sharing this login start from its last committed view when opened/refreshed. Already-open
+tabs keep their current selections, with no required live update. For concurrent explicit changes,
+last server commit wins, not browser time; no account-version conflict/reconciliation prompt is
+shown. Another still-valid browser/profile/device session keeps its own view. Logout, expiry or a
+new login starts defaults rather than importing any other session's settings. Closing/opening a
+tab or restarting a browser follows whether the login remains valid, with no new remember-me rule.
 
 Changing filters/sort requests a fresh ordered snapshot; retain old rows marked as refreshing until the matching response arrives, then apply atomically. Do not label old rows as matching the new query. Coalesce rapid selections and discard outdated query responses.
 
@@ -61,6 +73,8 @@ Overdue uses the browser's local calendar, including midnight/focus recalculatio
 | Situation | Required display/action |
 |---|---|
 | Initial request pending | Loading state; task writes disabled |
+| View absent/invalid/unreadable, task load succeeds | Complete defaults, no view-state notice; normal task controls available |
+| View remembering fails or is unconfirmed | Current selection stays usable without warning; task actions depend only on auth/task load and task-operation state |
 | Successful empty owned list | No tasks yet, with New Task action |
 | Tasks exist but filters match none | No tasks match these filters; controls remain available |
 | Initial load failure | Task list unavailable; Retry/support; no write controls enabled |
@@ -89,6 +103,11 @@ browser reload, close, crash, or navigation can discard it. Warn the user to wai
 result; after interruption, direct them to sign in/refresh and review the current list before
 re-entering the action. An early snapshot is not proof of rollback: the first request can later
 commit, so a repeated action can create a duplicate or a delayed unexpected change.
+
+Also clear queued view saves and invalidate old view-response generations on logout/account
+change; server session invalidation prevents their use in a new login. No session key is visible
+to scripts. TD-001's cross-tab conceal-before-revalidation mechanism is still OPEN for R3; these
+view-lifetime rules do not certify that privacy correction or accept its exposure risk.
 
 Support is reachable from load errors and auth screens. It provides a configured contact and
 nonsensitive reference, with no self-service task-data reset, password reset/recovery, or account

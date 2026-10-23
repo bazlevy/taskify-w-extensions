@@ -2,6 +2,9 @@
 
 See [research.md](research.md) for decisions and [contracts/http.md](contracts/http.md) for wire formats. This describes the planned schema and domain entities; it is not a migration.
 
+**Revision:** 2026-10-23, aligned to Scope 1.1 / AM-001. Targeted R2 review and human Design approval
+are pending; the historical R2-Rev3 package and findings remain unchanged.
+
 ## Persistent entities
 
 ### User Account — accounts.User
@@ -10,9 +13,10 @@ Minimal Django AbstractUser subclass configured as AUTH_USER_MODEL before the in
 
 Registration accepts username/password/confirmation through Django validation. Reject case-insensitive username collisions, including concurrent registration, with a database uniqueness constraint on Lower(username) as well as application validation. No invitation or email is required. Password values never enter logs or task DTOs. Accounts are never accepted from client-submitted ownership fields.
 
-Relationships: one account owns one TaskListState, one TaskFilterPreference, zero or more Tasks,
-zero or more MutationReceipts and database-backed sessions. Use Django's supported session
-model/storage rather than a custom session entity.
+Relationships: one account owns one TaskListState, zero or more Tasks, zero or more MutationReceipts
+and database-backed sessions. Each authenticated session may have one SessionViewState. It is not
+an account-level preference and is never imported into another session. Use Django's supported
+session model/storage for authentication rather than inventing a replacement identity store.
 
 ### TaskListState
 
@@ -25,26 +29,46 @@ Create with the account in the same registration transaction. No separate user-v
 
 Every task snapshot and mutation locks this row first. A snapshot copies owned rows and revision under the lock; sorting/serialization happen after release. Mutations check the receipt, validate version, change the task, increment revision and record the receipt under one atomic transaction. Replays do not increment revision. All operations follow account-state → receipt → task lock order.
 
-### TaskFilterPreference
+### SessionViewState — AM-001 replacement design, approval pending
 
-One account-owned record, created with the account in the registration transaction.
+Optional view-convenience record tied to a single current Django login session; registration does
+not create an account preference record. An absent record is normal first use.
 
 | Field | Type | Rules |
 |---|---|---|
-| owner_id | User FK, primary key / one-to-one | Required, unique, indexed |
-| status | text enum | all, active, completed; starts all |
-| priority | text enum | all, low, medium, high; starts all |
-| version | bigint | Positive; starts at 1; increments once per accepted preference save |
-| updated_at | timestamptz | Server-generated UTC instant on accepted preference save |
+| session_id | One-to-one FK to Django Session.session_key; primary key | Server-derived, never accepted from JSON or exposed; cascade deletion |
+| schema_version | positive integer | Current tuple format 1, not an optimistic conflict version |
+| status | text enum | all, active, completed |
+| priority | text enum | all, low, medium, high |
+| sort | text enum | due_date, priority, created_at, title |
+| direction | text enum | asc, desc |
 
-Preference updates lock this record and require its displayed version. A stale update returns the
-authoritative saved pair and version without mutation. Preference records are independent of task
-list revision and task-mutation receipts: saving filters never modifies task data and does not
-relax the task-write lock during a saved-task load failure. The browser records the latest confirmed
-pair/version separately from its current visible pair. It sends one preference update at a time;
-later user selections replace a single queued desired pair. A confirmed acknowledgement advances
-the confirmed version. A rejected or outcome-unknown update requires an authoritative re-read
-before any new overwrite attempt; a lower-version or stale client-generation response is ignored.
+Replace all four values atomically; valid schema and every component are required. A missing,
+incomplete, invalid or unreadable record means the entire default tuple all/all/due_date/asc,
+silently, provided authentication and task loading succeed. Do not repair or persist defaults on a
+GET. Task data, task versions, account list revisions and MutationReceipt are unaffected.
+
+The browser applies its current tuple independently of remembering. It sends one view save at a
+time and retains only the newest queued selection. An old reply cannot change newer controls or
+claim a newer tuple was remembered. Failures/unknown outcomes cause no view warning or automatic
+retry; a later explicit user selection can save the latest tuple. Concurrent tabs use last server
+commit order; a refreshed/new tab reads the latest committed valid tuple at read time. A previously
+uncertain request may still commit; no wall-clock or exactly-once view-intent guarantee is added.
+
+Technical guard for R3 review: capture the request's original server session key; in a short atomic
+save lock the live Django session row before the view row, validate existence, expiry and that its
+authenticated user still matches, then upsert the tuple. Do not create/replace authentication
+session records while saving a view. Coordinate logout/new-login invalidation using the same guard:
+an earlier save may commit before invalidation and then be deleted; an old save after invalidation
+must fail. Every explicit successful login uses a fresh session key with no imported view, even
+when login is for the same account; other valid sessions remain independent. Routine page refresh
+or closing a tab does not create a login. Preserve a view across non-login session-key maintenance
+within a valid login through a guarded move; invalidate the old key. R3 must assess this lifecycle
+and middleware races before approval. Expired rows must never be restored even before cleanup.
+
+On a view-read failure, roll back its isolated read/savepoint before the independent task snapshot
+transaction; never swallow an error inside an aborted transaction and claim task loading succeeds.
+An authentication/database failure preventing task access still produces its normal protected error.
 
 ### Task
 
@@ -92,14 +116,15 @@ Account deletion is not exposed by this feature. Any future operational account 
 ### Task Filter
 
 Status: all, active, completed. Priority: all, low, medium, high. Combine predicates with AND. A
-filter never mutates tasks. The authoritative selected pair and preference version are persisted in
-the account's TaskFilterPreference record; defaults are All/All. The current page may display an
-unconfirmed attempted pair after a failed or outcome-unknown preference save, but only an
-acknowledged or re-read matching record restores on later sessions/devices.
+filter never mutates tasks. Selection is part of the complete session view; the current visible
+tuple may differ from what was successfully remembered. Refresh/new tabs restore available valid
+remembered state or complete defaults, never an unconditional promise about an unconfirmed save.
 
 ### Task Sorting
 
-Method: due_date, priority, created_at, title. Direction: asc/desc. User labels: earliest/latest, Low–High/High–Low, oldest/newest, A–Z/Z–A. First-use and fresh-page default: due_date/asc. Session memory only.
+Method: due_date, priority, created_at, title. Direction: asc/desc. User labels: earliest/latest,
+Low–High/High–Low, oldest/newest, A–Z/Z–A. New-login default: due_date/asc; restore method/direction
+with filters within the same still-valid login. Missing/invalid view uses complete defaults.
 
 Sort only the primary key in the chosen direction. Due dates always place null last, then tie by descending priority, ascending creation timestamp and ascending UUID. Other primary ties use ascending creation timestamp then UUID; creation-time ties use UUID. Title key is NFC normalization followed by casefold and Unicode code-point comparison. Task details are not changed by sort/filter.
 
@@ -111,7 +136,11 @@ Compare calendar dates directly. Recompute at local midnight, on focus and after
 
 ### Snapshot / mutation acknowledgement
 
-Snapshot: account public ID, monotonic list revision, query echo, total and matching counts, ordered matching task DTOs. Copy the full account-owned task set and revision consistently, then derive the requested filtered ordering. No pagination/delta tokens initially.
+Snapshot: account public ID, monotonic list revision, effective full query echo, total and matching
+counts, ordered matching task DTOs. On a parameterless bootstrap choose a valid session view or
+complete defaults; explicit full queries select only the current page. Copy the full account-owned
+task set and revision consistently, then derive the requested filtered ordering. No pagination/delta
+tokens initially. Settings fallback never converts a failed task snapshot to a successful empty list.
 
 Acknowledgement: operation ID, kind, task ID, committed version (null for delete), committed list revision and replayed flag. Never reconstruct a deleted task from a receipt.
 
@@ -134,3 +163,9 @@ After a valid snapshot, an exact retry remains subject to receipt and version ch
 lock is a UI safety measure; server endpoints always perform validation, ownership and version
 checks independently. UI state cannot establish an absolute global freshness guarantee across
 devices; task versions protect concurrent changes.
+
+View restoration/remembering is an independent convenience state and does not enter task
+load_error/outcome_unknown. When only it fails, keep controls/current view usable silently. Session
+invalidation clears the view-save queue alongside existing task/draft clearing. TD-001's full
+cross-tab concealment mechanism remains an open R3 dependency; session-scoped views alone do not
+solve it.

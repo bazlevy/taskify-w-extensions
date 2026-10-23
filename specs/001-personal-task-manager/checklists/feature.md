@@ -86,3 +86,35 @@ Review sources: [plan](../plan.md), [design decisions](../research.md), [data mo
 - Add reviewer findings and decision/document links inline; a question or [Gap] marker is not itself a finding.
 - Research section numbers refer to the numbered headings in research.md; contract/data-model references name their headings.
 - All 36 items are intentionally unchecked. This generation does not evaluate or approve the requirements and does not report implementation completion.
+
+## AM-001 rerun — targeted R2 review, 2026-10-23
+
+**Purpose:** Review the requirements quality of the Design amendment against human-approved Scope
+1.1 / AM-001 before R2 sign-off. **Depth:** Standard, with focused failure/privacy/concurrency
+coverage. **Audience:** Independent R2 reviewer. No application or test execution is certified.
+
+Items CHK001–CHK036 above are retained verbatim as the previous review checklist; their markers
+are unchanged. Where old prompts imply account-persistent preferences, version conflicts or a
+fresh-page sort reset (especially CHK012/020/027/031), review the revised session-view contract using
+the amendment items below. FD-002/005 remain historically verified for R2-Rev3; the new lifetime and
+silent failure policy require fresh independent assessment. No new item is pre-checked.
+
+- [ ] CHK037 Are all four view components and all-or-nothing defaults defined consistently across Scope, entities and interaction/interface contracts? [Completeness, Spec §FR-012–013, §AC-005]
+- [ ] CHK038 Is the authenticated login lifetime distinguished from page/tab lifetime, browser restart and a distinct new login, without inventing an expiry policy? [Clarity, Spec §Assumptions and Exclusions; Research §7]
+- [ ] CHK039 Are same-login refresh/new-tab restoration and the absence of mandatory live updates to existing tabs explicit? [Coverage, Spec §FR-012; UI §Filters, sorting and calendar]
+- [ ] CHK040 Are distinct valid sessions for the same account specified to remember only their own views while tasks retain account-wide persistence and synchronisation? [Consistency, Spec §FR-008/010/012, §SC-004]
+- [ ] CHK041 Are absent, incomplete, invalid and unreadable view states specified to select every default silently, rather than retaining a partial remembered tuple? [Edge Cases, Spec §FR-012, §AC-005]
+- [ ] CHK042 Are failed and unconfirmed remembering outcomes specified to keep the chosen view usable without warnings, restoration promises or false outcome claims? [Acceptance Criteria, DEC-AM-001-01; HTTP §Session view remembering]
+- [ ] CHK043 Do requirements remove the preference-bootstrap dependency while distinguishing convenience failure from authentication and task-data load failures? [Consistency, Spec §FR-009/010/012/014; HTTP §Read snapshot]
+- [ ] CHK044 Are initial defaults and restored sort method/direction compatible with all four bidirectional sorts, undated-last rules and existing secondary ordering? [Consistency, Spec §FR-013, §AC-006/007/011]
+- [ ] CHK045 Are current controls, remembered shared state and delayed save acknowledgements distinguished precisely enough to avoid replacing or falsely confirming a newer view? [Clarity, Research §7; HTTP §Session view remembering]
+- [ ] CHK046 Are competing-tab precedence, atomic full-tuple replacement, rapid choices and uncertain save consequences stated explicitly for independent R2 review? [Coverage, Data Model §SessionViewState; Quickstart §AM001-V07–09]
+- [ ] CHK047 Are logout/expiry/account-change clearing and old-request rejection required without weakening account privacy or implying TD-001 is already corrected? [Non-Functional, Spec §FR-010; UI §Synchronisation and privacy]
+- [ ] CHK048 Are the session settings' ownership, retention boundary and separation from task records/receipts documented with no account-wide preference inheritance? [Dependencies, Data Model §SessionViewState; Plan §Storage]
+- [ ] CHK049 Are session middleware, concurrent remembering and logout/rotation safety obligations documented as technical review dependencies rather than proven guarantees? [Assumptions, Research §7; TD-001/002]
+- [ ] CHK050 Do amendment scenarios cover every recorded Scope decision and preserve task-load retry/support and the FD-001 uncertain-write lock? [Traceability, DEC-AM-001-01–03; Quickstart §AM001-V01–10, §R2-T05]
+- [ ] CHK051 Are unchanged task lifecycle/idempotency, calendar, authentication, FD-003 interruption and FD-004 no-recovery boundaries retained with clear history references? [Consistency, R2-Rev3; Quickstart §R2-T07/12]
+- [ ] CHK052 Are Scope approval, author Design reconciliation, independent R2 assessment and human Design approval kept distinct, with remaining TD findings and owners visible? [Ambiguity, Plan §Delivery and Verification Boundaries; Review handoff]
+
+This Spec Kit Checklist rerun appended 16 requirements-quality questions. Markers remain the
+reviewer's responsibility; completion of author consistency checks is not their approval.

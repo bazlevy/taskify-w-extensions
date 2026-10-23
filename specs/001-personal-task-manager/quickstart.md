@@ -2,6 +2,10 @@
 
 This is a planned validation/run guide, not evidence that application code exists. At planning time the repository contains specification tooling and design documents only. The application, dependency lock, Compose configuration and tests named below must be produced during implementation before these commands run.
 
+**AM-001 revision:** 2026-10-23; Scope approved, Functional Design amendment pending independent
+R2 review and human approval. Existing R2-Rev3 report remains immutable historical evidence;
+TD-001–007 remain OPEN. Commands below are future validation instructions, not executed work.
+
 Contracts: [HTTP](contracts/http.md), [UI](contracts/ui.md). Entities and ordering: [data-model.md](data-model.md). Decisions: [research.md](research.md).
 
 ## Prerequisites and local setup
@@ -64,18 +68,24 @@ Expected: relevant automated suites pass, no missing migrations, and production 
 
 4. **Calendar semantics** — FR-011; AC-004. With a controlled browser clock/timezone, verify yesterday is overdue only when active; today/tomorrow/undated are not. Complete/reopen and cross local midnight. Test a timezone differing from UTC and a year boundary; saved date remains identical. Verify two devices use their own local calendar and do not shift the date itself.
 
-5. **Filter, sort and account preferences** — FR-007/012/013; AC-005/006/007/011; US3. Fixtures span both statuses, all priorities, dates 2026-10-19/21/30, undated tasks, tied dates/priorities/creation timestamps and titles differing in case/Unicode normalization. Check each filter and combined AND, then all four methods in both directions. Undated stays last; due-date ties stay high-priority then oldest regardless of direction; remaining ties follow the data model. Successful no-match result shows its specific empty state. Restart the page/session and restore server-saved filters; sort resets to due_date/asc. Sign in on a second device and verify the last acknowledged account preference restores there.
+5. **Filter, sort and authenticated-session view** — FR-007/012/013; AC-005/006/007/011; US3/4. Fixtures span both statuses, all priorities, dates 2026-10-19/21/30, undated tasks, tied dates/priorities/creation timestamps and titles differing in case/Unicode normalization. Check each filter/combined AND and four sorts in both directions; preserve undated-last and domain ties. Successful no-match result has its own empty state. The AM-001 cases below replace account-preference restoration/reconciliation scenarios for this draft, without rewriting historical R2-T06 / FD-002/005 verification.
 
-**R2-T06 / FD-005 preference reconciliation** — Drop a preference PUT response after the server
-commits it; the UI says only that it could not confirm the save, then re-reads the authoritative
-pair/version and marks the same pair saved. Return a 409 for a stale expected version; confirm that
-the UI treats it as a confirmed rejection without claiming another device caused it, re-reads the
-authoritative preference, and requires explicit approval before overwriting a different pair.
-Rapidly change filters while a save is pending; assert that only one PUT is active, only the newest
-queued pair is later sent, and a late acknowledgement or re-read cannot replace the newest visible
-selection or regress the confirmed version. Fail the authoritative re-read and verify the visible
-pair remains unconfirmed with no automatic overwrite. Browser storage availability cannot change
-these behaviours.
+| Case | Planned challenge / observable result |
+|---|---|
+| AM001-V01 | New valid login: bootstrap GET /api/tasks/ directly with no preference request; All/All/due_date/asc. Choose Completed/High/title/desc, obtain view-save acknowledgement, refresh and open a same-login tab: restore all four |
+| AM001-V02 | Keep a tab on its old view while another explicitly saves a new tuple: no required live update; new/refreshed tab restores latest server-committed complete view |
+| AM001-V03 | Two valid sessions for same account on distinct browser/profile/device: new login defaults; each later remembers only its own view while task changes still synchronise; revisiting an already-valid session retains its own view |
+| AM001-V04 | Logout/login as same or different account, expire/login, repeat explicit same-account login: new defaults, no prior-view import. Tab close/reopen and browser restart follow actual login validity, without inventing authentication expiry |
+| AM001-V05 | Remove/corrupt each component or schema independently, simulate isolated view-read outage: all four defaults silently; authenticated task snapshot and actions remain usable; no partial tuple, notice or repair write from GET |
+| AM001-V06 | View save definitely fails or commits with lost/malformed reply: chosen controls/view remain usable silently, no false success/failure or restoration claim; later refresh restores actual valid committed tuple or complete defaults |
+| AM001-V07 | Rapid view changes during a save: one active save per tab, latest queued explicit tuple only; late reply cannot replace newer controls or confirm a tuple it did not carry; no automatic replay of an uncertain old tuple |
+| AM001-V08 | Concurrent explicit saves in same-login tabs: full-tuple atomicity and last server commit; no account-version 409 dialog or cross-device view sync. Delay an unrelated middleware session save: it must not revert the SessionViewState tuple |
+| AM001-V09 | View save races logout/rotation/expiry/new login: session-first guard and ownership revalidation prevent old-row resurrection, account/session carryover and mutation of new login settings. Verify old request/session-generation responses are ignored |
+| AM001-V10 | Authentication or task load fails while view restoration also fails: auth error prevents private access; task error follows FR-014/FD-001 Retry/support and locked task writes, including uncertain replay; never a successful empty task list |
+
+R3 must verify the proposed session-row lifecycle/lock mechanism before these can be treated as
+implementable release tests. TD-001 cross-tab concealment needs its separate scenario and correction;
+AM001-V09 does not close that finding. No planned scenario is recorded as executed here.
 
 6. **Saved changes across devices** — FR-008; AC-009; SC-004. With A signed in on two isolated browser contexts, create/edit/complete/reopen/delete from one; focus/refresh or visible polling on the other must converge after successful synchronisation. Close/reopen and sign in again. No full-list replacement request occurs. Record that the polling interval is a design setting, not an availability SLA.
 
