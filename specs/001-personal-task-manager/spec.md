@@ -4,17 +4,25 @@
 
 **Created**: 2026-10-20
 
-**Reconciled**: 2026-10-23 (AM-001 incorporated and independently verified in R1-Rev4 Section 7)
+**Reconciled**: 2026-10-25 (AM-002 incorporated under DEC-AM-002-01, independently verified in R1-Rev5 Section 8 and finally human-approved in Section 9; approval metadata recorded without product-definition changes)
 
-**Scope Version**: 1.1 / AM-001
+**Prior Reconciliation**: 2026-10-23 (AM-001 incorporated and independently verified in R1-Rev4 Section 7)
 
-**Status**: Scope Approved — version 1.1 / AM-001
+**Scope Version**: 1.2 / AM-002
 
-**Approved**: Barry Levy, 2026-10-23 (Australia/Melbourne), R1-Rev4 Section 8; exact approved candidate SHA-256 `61062311e5d1423f1d13f485c555158964e09f0548d13263bfefa0f048447fd4`.
+**Status**: Scope APPROVED — version 1.2 / AM-002
+
+**Scope v1.1 Approved**: Barry Levy, 2026-10-23 (Australia/Melbourne), R1-Rev4 Section 8; exact approved candidate SHA-256 `61062311e5d1423f1d13f485c555158964e09f0548d13263bfefa0f048447fd4`.
 
 **Prior Baseline Approved**: 2026-10-22; historical approvals remain attached to their exact baselines.
 
-**Approval Reference**: [R1-Rev4 Section 8](../../independent-reviews/1_scope/Review_4/scope_review_report.md#8-final-human-scope-amendment-approval--2026-10-23-australiamelbourne). Prior approval: [R1 Section 12](../../independent-reviews/1_scope/Review_3%20/scope_review_report.md#12-final-consolidated-human-scope-approval-2026-10-22). Section 13 remains an archival-evidence follow-up; no record has been reconstructed.
+**AM-002 Incorporation Authorisation**: Barry Levy, 2026-10-25 (Australia/Melbourne), DEC-AM-002-01, [R1-Rev5 Section 7](../../independent-reviews/1_scope/Review_5/Taskify_R1-Rev5_Targeted_Scope_Review_AC010.md#7-subsequent-human-amendment-authorisation--2026-10-25-australiamelbourne). Authorises only the Section 4 amendment and minimum conforming edits; not final Scope approval.
+
+**Final Scope v1.2 Approval**: APPROVED — Barry Levy, 2026-10-25 (Australia/Melbourne), [R1-Rev5 Section 9](../../independent-reviews/1_scope/Review_5/Taskify_R1-Rev5_Targeted_Scope_Review_AC010.md#9-final-human-scope-v12-approval--2026-10-25-australiamelbourne); independently verified and human-approved candidate SHA-256 `87bf1574788c46eedf6412782e1b6a60915a4db0d4b643483d9e79736a2c745c`. This subsequent metadata-only update preserves that approved product definition.
+
+**Operative Approved Baseline**: Scope v1.2 / AM-002, approved in R1-Rev5 Section 9 for candidate SHA-256 `87bf1574788c46eedf6412782e1b6a60915a4db0d4b643483d9e79736a2c745c`. Historical v1.1 / AM-001 approval remains attached to source SHA-256 `b1eb181074f746f355b80a22d67d9ccc5f1f5d6b94dcea64e320610479339fca`.
+
+**Historical Approval Reference**: [R1-Rev4 Section 8](../../independent-reviews/1_scope/Review_4/scope_review_report.md#8-final-human-scope-amendment-approval--2026-10-23-australiamelbourne). Prior approval: [R1 Section 12](../../independent-reviews/1_scope/Review_3%20/scope_review_report.md#12-final-consolidated-human-scope-approval-2026-10-22). Section 13 remains an archival-evidence follow-up; no record has been reconstructed.
 
 **Amendment Reference**: [R1 Review 4](../../independent-reviews/1_scope/Review_4/scope_review_report.md); DEC-AM-001-01–03, 2026-10-23.
 
@@ -29,6 +37,7 @@ Version labels below are readable document references, not historical Git tags.
 | 1.0 | 2026-10-22 | Baseline | Original reconciled Scope and downstream deferrals. | APPROVED in R1 Section 12 for SHA-256 `53bb1c39db8433556ceb505bcafb18c9258879579a7458a1d204a54a2daa025e`. |
 | 1.0 (metadata correction) | 2026-10-22 | Baseline metadata | Scope-approved metadata; requirements unchanged. Pre-amendment SHA-256 `4ef233db3b4dfdbcbd50b4225e1613ef30fedfabf19b618dc17fd5bb0d2c74ae`. | Subsequent human confirmation is reported by R1 Review 4 and the R2/R3 baseline records; authoritative R1 Section 13 is unavailable for direct verification. |
 | 1.1 | 2026-10-23 | AM-001 | Narrow filter/sort restoration to each valid login, include sorting, and silently fall back on view-state failures. TD-002 exposed preference restoration blocking otherwise available tasks. Affects FR-012, FR-013, AC-005 and related text. | APPROVED by Barry Levy in R1-Rev4 Section 8, after independent verification in Section 7; approved candidate SHA-256 `61062311e5d1423f1d13f485c555158964e09f0548d13263bfefa0f048447fd4`. |
+| 1.2 | 2026-10-25 | AM-002 | Replace AC-010 and qualify only Story 4's independent test/scenario 3: previously-authorised task content may remain visible or finish rendering while a same-profile login change is unobserved, with no maximum observation delay; clear/conceal on observation, reject known stale/mismatched rendering and preserve server isolation/previous-login intent protection. FR-010 unchanged. | Authorised for incorporation by Barry Levy, DEC-AM-002-01, R1-Rev5 Section 7; exact reviewed v1.1 source SHA-256 `b1eb181074f746f355b80a22d67d9ccc5f1f5d6b94dcea64e320610479339fca`. Independently verified in R1-Rev5 Section 8; APPROVED by Barry Levy on 2026-10-25 in Section 9 for candidate SHA-256 `87bf1574788c46eedf6412782e1b6a60915a4db0d4b643483d9e79736a2c745c`. Approval applies to the unchanged product definition; this sign-off update is metadata-only. |
 
 **Clarification decisions incorporated in the Section 8 approval:**
 
@@ -38,10 +47,18 @@ Version labels below are readable document references, not historical Git tags.
 - **R1-AM-004 — DEFERRED (Section 8):** Non-product archival-evidence gap: the available historical R1 report, its Git history and supplied archive do not contain Section 13. Section 12 and the reported later confirmation are preserved; obtaining the authoritative Section 13 remains a follow-up, not a condition of AM-001 approval. No approval record has been reconstructed or separate risk acceptance inferred.
 
 Prior approvals remain attached to their exact baselines. The reconciled AM-001 product definition
-was independently verified and human-approved for the candidate hash above. This approval-metadata
-update leaves its product-definition contents unchanged. Detailed review evidence and finding
+was independently verified and human-approved for the candidate hash above. The earlier v1.1 approval-metadata
+update left its product-definition contents unchanged. Detailed review evidence and finding
 dispositions remain in the independent reports. Revised Functional and Technical Design require
 their own reviews and human approvals.
+
+Scope v1.2 incorporates only the AM-002 text authorised for reconciliation in
+[R1-Rev5 Section 4](../../independent-reviews/1_scope/Review_5/Taskify_R1-Rev5_Targeted_Scope_Review_AC010.md#4-minimum-proposed-scope-amendment--authorised-for-incorporation-not-final-scope-approved).
+Section 7 authorisation, Section 8 independent verification and [R1-Rev5 Section 9](../../independent-reviews/1_scope/Review_5/Taskify_R1-Rev5_Targeted_Scope_Review_AC010.md#9-final-human-scope-v12-approval--2026-10-25-australiamelbourne)
+final human approval are separate records. The approved v1.2 product-definition candidate has
+SHA-256 `87bf1574788c46eedf6412782e1b6a60915a4db0d4b643483d9e79736a2c745c`;
+this approval-metadata update changes no product requirements. Earlier approvals remain attached
+to their original baselines. Functional and Technical Design gates remain separate.
 
 ## Product Boundary
 
@@ -133,13 +150,13 @@ As an individual, I want to register my own private account and access my person
 
 **Why this priority**: Private account access, cross-device synchronisation and persistence are approved product guarantees and essential to trust in the task manager.
 
-**Independent Test**: Register a first-time private account without an invitation or administrator action, sign in to that account in desktop and mobile browsers, create and modify tasks, and verify that successfully saved task data is available on both after synchronisation. Verify each distinct authenticated session begins with its own default view and remembers only its own later selections. Sign in to a different account and verify the first user's tasks and settings are inaccessible.
+**Independent Test**: Register a first-time private account without an invitation or administrator action, sign in to that account in desktop and mobile browsers, create and modify tasks, and verify that successfully saved task data is available on both after synchronisation. Verify each distinct authenticated session begins with its own default view and remembers only its own later selections. Sign in to a different account and verify the first user's tasks and settings are inaccessible through that account's authenticated operations, subject only to the AC-010 previously-authorised display residual.
 
 **Acceptance Scenarios**:
 
 1. **Given** successfully saved tasks, **When** their account owner signs in during a later session, **Then** the saved tasks, details and completion statuses are available.
 2. **Given** successfully saved task changes in one signed-in browser, **When** the same account is used on another device and synchronisation completes, **Then** the changes are available there with the correct details and status.
-3. **Given** a different signed-in account, **When** that user accesses the task manager, **Then** the first account's task list is not accessible.
+3. **Given** a different signed-in account, **When** that user accesses the task manager, **Then** the first account's task list is inaccessible through the new account's authenticated requests; the narrow unobserved prior-authorised display case is governed by AC-010.
 4. **Given** a complete, valid four-setting view remembered in a still-valid authenticated browser login, **When** the user refreshes or opens another tab in that login, **Then** the status/priority filters and sort method/direction are restored and matching saved tasks appear in that order. A new login or distinct browser/profile/device session starts with all four defaults and remembers only its own later choices; saved tasks still synchronise by account. Already-open tabs need not update their view live.
 5. **Given** a persistent failure to load existing saved tasks, **When** retry does not resolve it, **Then** the user is directed to support, and the failure does not permit changes that could overwrite or destroy the existing saved task data.
 6. **Given** a first-time user without an account, **When** they register, **Then** they can obtain a private account and sign in without requiring an invitation or administrator provisioning.
@@ -194,7 +211,7 @@ As an individual, I want to register my own private account and access my person
 - **AC-007**: Given **Due Date** sorting is selected and multiple tasks share a due date, a higher-priority task appears before lower-priority tasks; among tasks sharing that date and priority, the earlier-created task appears first. Other tied-value behaviour is defined during Functional Design.
 - **AC-008**: Given saved tasks that fail to load, when the account owner opens the app, then an error and retry opportunity are presented; if failure persists, support guidance is available and changes capable of overwriting or destroying existing saved data are blocked. No self-service reset is offered.
 - **AC-009**: Given an account that has saved tasks on a desktop browser, when the same user signs in on a mobile browser and synchronisation completes, then those tasks and their successfully saved changes are available with correct details and status.
-- **AC-010**: Given two distinct signed-in accounts, when either user accesses the app, then neither can view or modify the other's personal tasks.
+- **AC-010**: Given two distinct signed-in accounts, when either account makes an authenticated request to access or change personal tasks, the request must be authorised for that account and must not access or change the other account's tasks. Task operations initiated under a previous login must not be applied under a different login. A tab may continue to display, or finish rendering, task content previously authorised under its prior login while a login change in another tab of the same browser profile remains unobserved; no browser-wide zero-exposure timing or maximum observation delay is guaranteed. Once the change is observed, prior-login private content must be cleared or concealed, and responses known to be stale or mismatched must not be rendered. This limited display residual does not authorise cross-account API reads, mutations or reuse of previous-login task intent.
 - **AC-011**: Given multiple tasks, when a user selects any of the four supported sorting methods in either direction, then the resulting primary order matches that selection, subject to the approved due-date handling.
 - **AC-012**: Given a first-time user without an account, when they register, then they can obtain a private personal account and sign in without an invitation or administrator provisioning.
 

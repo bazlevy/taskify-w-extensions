@@ -1,12 +1,50 @@
 # UI Contract
 
-Scope: responsive desktop/mobile web application. See [http.md](http.md) for requests and [../data-model.md](../data-model.md) for state/ordering rules.
+**Approved Functional Design:** Scope v1.2 / AM-002 and R2-Rev8, approved by Barry Levy on
+2026-10-25; [R2-Rev8 approval §4](../../../independent-reviews/2_design-functional/Review_8/Taskify_R2-Rev8_Targeted_Functional_Design_Review_APPROVED.md). FD-009 is RESOLVED_VERIFIED per
+that record §2. Historical R2-Rev5/R2-NAV-001 and R2-Rev6 approvals remain attached to their
+baselines; only targeted clauses are superseded. R3 NOT_READY; TD-008/010/011 OPEN.
+P1/IndexedDB paused. No technical architecture or runtime evidence is approved here.
 
-**Revision:** AM-001 author reconciliation, 2026-10-23; targeted independent R2 review and human
-approval pending. Prior R2-Rev3 and accepted FD-003/004 risks remain historical authority for their
-unchanged decisions. Scope's silent view-state handling supersedes prior warning proposals.
+Scope: responsive desktop/mobile web application. See [HTTP](http.md) and
+[data model](../data-model.md). Scope v1.2 AC-010 and RA-FD006-001 define the accepted display
+residual. FD-003/004 and silent view rules remain within their original bounds.
 
 ## Screens and navigation
+
+Authenticated users opening Taskify in another tab within the same browser profile go directly
+to their task list using the shared login. This is navigation, not a new login: retain account,
+epoch and the complete valid remembered view. Accessing /accounts/login/ while authenticated
+redirects to /tasks/ without showing a sign-in form. Normal deliberate account switching requires
+logout first; confirmed logout invalidates its intended shared login. Genuine anonymous requests
+already in flight follow the separate conventional response-order rule below.
+
+A stale sign-in page restored from history or revisited revalidates before enabling submission.
+If already authenticated, discard credential fields and replace navigation with /tasks/.
+Requests carrying an authenticated login also cannot evaluate replacement credentials or reset its view. Lookup uncertainty
+shows technical Retry/support rather than treating the user as signed out. Task-screen private
+content still follows the concealed authority/snapshot gate before reveal.
+The fetch-based login controller treats an authenticated 303 to /tasks/ as navigation, discards
+credential/candidate queues and loads that task shell; it never retries credentials because the
+response was redirected HTML instead of a fresh-login JSON result.
+
+### Concurrent anonymous logins — FD-007 / CA-007
+
+Genuine requests submitted while anonymous may both create valid distinct logins. Ordinary
+browser session-cookie application/selection governs subsequent requests, including same-account
+distinct epochs. A later response may select a different valid login without intervening logout.
+There is no first-submission, server-commit or first-browser-winner guarantee, and no required
+competitor conflict solely to protect that winner. This exception does not permit replacement
+credential evaluation on an authenticated request; R2-NAV-001 remains unchanged.
+
+Each actual fresh login starts its own default view; valid-login navigation retains its tuple.
+On observed selection change, clear prior-login client state and load only the selected login's
+account/view; never transfer drafts, queued operations or settings. Browser cookie order is not
+account-wide preference precedence. The task screen identifies the current account.
+
+S2 remains: a distinct valid late login may authenticate after another login's confirmed
+revocation. Revoked/invalid credentials cannot authenticate; no promise cancels/revokes every
+other valid session created by anonymous overlap. No automatic credential replay.
 
 Registration: username, password, confirmation, inline validation, sign-in link, and a conspicuous
 notice: "If you forget these credentials, Taskify cannot reset them or restore account access."
@@ -19,6 +57,17 @@ Task screen: account identity and POST sign-out; New Task; status filter; priori
 Use a single-column card/form layout on narrow screens, with controls wrapping without horizontal page scrolling. Buttons have accessible names, inputs have visible labels, errors are associated with fields, keyboard focus is managed when forms/dialogs open and close, and status/error messages use appropriate live announcements. Do not communicate status only through color.
 
 ## Task forms and actions
+
+**Q1 aligned by CA-006:** Every protected server operation authenticates the presented login,
+enforces ownership and intended-login guards before access/effects. Preserve CSRF, task versions,
+receipts and exact retry rules. Never rebind an A intent to B, including same-account new epoch.
+
+Local cached details/edit/delete dialogs, filter choices, normal responses/refreshes and typing
+do not require an independent auth round trip for every interaction. Check known identity/epoch/
+query/generation/revision before applying responses. Initial protected entry, restored stale forms,
+focus/visibility/resume/history and auth uncertainty trigger appropriate concealed revalidation;
+observed changes clear old private state. Local Cancel/public support grant no protected access.
+Isolated view failure must not block otherwise available tasks.
 
 New task: title required; description, priority and due date optional. Priority presents Medium as effective default and offers a clear/default state. Date input accepts a real calendar date; past dates remain valid. Save validates on both client interaction and server; server rules are authoritative. Display a saved state only after the server acknowledges commit.
 
@@ -64,7 +113,12 @@ shown. Another still-valid browser/profile/device session keeps its own view. Lo
 new login starts defaults rather than importing any other session's settings. Closing/opening a
 tab or restarting a browser follows whether the login remains valid, with no new remember-me rule.
 
-Changing filters/sort requests a fresh ordered snapshot; retain old rows marked as refreshing until the matching response arrives, then apply atomically. Do not label old rows as matching the new query. Coalesce rapid selections and discard outdated query responses.
+Changing filters/sort requests a fresh ordered snapshot; retain old rows marked as refreshing
+until a matching response passes checks against known account/epoch/query/generation/revision.
+Do not label old rows as matching a new query. Concealment/clearing takes precedence on required
+lifecycle/uncertainty boundaries or observed invalidation. No separate post-arrival auth request
+or browser-wide atomic rendering is required; the bounded AC-010 display residual applies.
+Coalesce rapid selections and discard known outdated query/session-generation replies.
 
 Overdue uses the browser's local calendar, including midnight/focus recalculation. Due dates are displayed without timezone conversion. A completed task loses its overdue label; reopening restores it when appropriate.
 
@@ -73,6 +127,12 @@ Overdue uses the browser's local calendar, including midnight/focus recalculatio
 | Situation | Required display/action |
 |---|---|
 | Initial request pending | Loading state; task writes disabled |
+| Authority uncertain at initial entry, focus/resume/history or recovery boundary | Conceal private content/actions and revalidate; Retry/support; never infer anonymity or empty success |
+| Private response arrives | Reject known identity/query/generation/revision mismatch; no mandatory independent auth probe per response; AC-010 residual applies to unobserved changes |
+| Valid overlapping anonymous login responses | Actual valid session cookie governs; no first-winner/conflict guarantee; observed change clears old client state |
+| Logout pending or outcome unknown | Clear/conceal local private state; retain intended epoch; no success claim without confirmed revocation |
+| Logout confirmed | Promptly dispatch notification; receiving runnable same-login tabs clear/navigate to login; no guaranteed delivery; revoked login remains invalid |
+| Cross-tab auth change / account or login_epoch mismatch | Clear tasks, drafts, pending payloads and view queues; discard old replies; sign-in/clean revalidation |
 | View absent/invalid/unreadable, task load succeeds | Complete defaults, no view-state notice; normal task controls available |
 | View remembering fails or is unconfirmed | Current selection stays usable without warning; task actions depend only on auth/task load and task-operation state |
 | Successful empty owned list | No tasks yet, with New Task action |
@@ -94,7 +154,57 @@ loaded. A second failure does not authorize reset.
 
 ## Synchronisation and privacy
 
-Poll every 15 seconds while visible, refresh on focus and after mutations, and expose Retry for manual recovery. Coalesce triggers. Reject stale revisions, wrong-account/session responses and outdated query generations. Each tab starts by validating its own session. A tab receiving a 401 or detecting an account mismatch must clear its task display immediately.
+Poll every 15 seconds while visible, refresh on focus/after mutations and expose Retry. Coalesce
+triggers; failed background reads back off at 15/30/60 s with jitter; manual Retry stays available.
+Reject stale revisions, wrong account/epoch/session and outdated query generations.
+
+Initial/history-restored shells conceal private DOM, account labels, drafts, dialogs and
+accessibility text. Blur/hidden/pagehide conceals and invalidates local generations; focus,
+visibility/resume/history return revalidates before normal private access. Observed auth changes,
+trusted auth failure or identity mismatch clear old rows/labels/drafts/dialogs/task-view queues
+and discard known invalidated responses. Required authority uncertainty stays concealed with
+Retry/support. Never treat view defaults as authentication.
+
+**FD-006 / CA-006:** Authenticate and owner/intended-login guard every protected server operation.
+Before applying replies, reject known account/epoch/query/generation/revision mismatches. No
+browser-wide atomic validation/render guarantee, continuous cookie observation, per-local-action
+or mandatory per-response auth round trip. Successful ordinary protected requests provide server
+auth evidence; required lifecycle and uncertainty checks remain. No old requests/drafts/mutations/
+view saves/retries may be rebound to a newer login, including same-account different epoch.
+
+**RA-FD006-001 / approved AC-010:** Prior-login-authorised content may remain visible or finish
+rendering while a same-profile cross-tab auth change is unobserved. Barry approved this bounded
+residual through Scope v1.2 and R2-Rev8. No maximum observation delay or zero-exposure promise.
+Shared-device confidentiality consequences can be serious; likelihood is unmeasured. This is
+not permission for cross-account API reads/mutations, old-intent reuse, known-mismatch rendering
+or continued private-state retention after observed change.
+
+Ordinary same-login task-refresh failure retains visibly stale rows/error and every FD-001
+mutation/retry lock until valid saved-task load. Do not relabel every task network failure as
+authority uncertainty. Auth success alone does not settle an unknown task operation. Isolated
+view remembering/restoration errors stay silent and cannot block otherwise available tasks.
+
+**FD-008 / CA-008:** Capture intended L and clear/conceal initiating-tab private state on logout
+intent. Show success only after confirmed shared L/view revocation; revoked credential replay
+fails. Promptly dispatch the existing notification mechanism. Receiving runnable same-profile
+L tabs clear private state and navigate to login without waiting for a poll/action. No guaranteed
+delivery, tab-ACK wait, atomic clearing or simultaneous suspended rendering is required.
+Missed/late/duplicate/unavailable delivery follows lifecycle/uncertainty revalidation and existing
+synchronisation; do not add a guaranteed transport or faster polling requirement.
+
+Other browser/device sessions remain unaffected. Delayed L notices or old logout intent cannot
+revoke N, reset N's view or restore L. Login navigation while N is authenticated obeys R2-NAV-001.
+If selection changes before the intended logout can be authorised, reject/revalidate, never revoke
+the new login or claim L was revoked. A distinct valid anonymous response may select another login
+under ordinary ordering, including after revocation; no promise locates all superseded sessions.
+
+A lost/malformed logout reply, 401/403, missing cookie or changed identity alone is not a confirmed
+ACK. Preserve unconfirmed-outcome Retry/support, bounded same-intended-epoch CSRF recovery and
+no password/task automatic replay.
+
+The prior first-winner/atomic-render/mandatory-interaction gates are superseded. Historical
+family/claim/rotation proposals select no current architecture; R3 must reassess retained guards
+and lifecycle/recovery against the conventional contract. P1 remains paused.
 
 On logout clear rendered tasks, drafts and pending in-memory data. Hide data before revalidating a
 page restored from browser history. Do not store task content, passwords, session tokens, pending
@@ -104,10 +214,36 @@ result; after interruption, direct them to sign in/refresh and review the curren
 re-entering the action. An early snapshot is not proof of rollback: the first request can later
 commit, so a repeated action can create a duplicate or a delayed unexpected change.
 
-Also clear queued view saves and invalidate old view-response generations on logout/account
-change; server session invalidation prevents their use in a new login. No session key is visible
-to scripts. TD-001's cross-tab conceal-before-revalidation mechanism is still OPEN for R3; these
-view-lifetime rules do not certify that privacy correction or accept its exposure risk.
+Fresh same-user login after logout/expiry starts defaults. Authenticated login-page navigation/
+submissions preserve current account/epoch/view: R2-NAV-001 is CLOSED — approved in R2-Rev5 §7.
+The inherited unapproved maintenance candidate keeps browser identity/epoch/view/original expiry;
+it is not a fresh login. R3 must prove continuity; this functional reconciliation adopts no mechanism.
+
+### Cross-tab CSRF recovery
+
+At a required stale-form/restoration or CSRF recovery boundary, obtain GET /api/csrf/'s fresh
+no-store masked token before the unsafe request rather than relying on a stale cached token. Login in another tab can rotate the
+secret after that read, so handle a trusted csrf_failed 403 as no service dispatch, never success.
+Keep private content concealed during mandatory revalidation.
+
+When auth housekeeping is required, refresh token/revalidate authority and retry it at most once.
+For logout, capture intended epoch on click and conceal/clear private state; retry once only
+after fresh token plus read-only authority still identifies that same epoch. If account/epoch
+changed, never log out the new login with the old intent. Another 403 or lookup failure leaves
+technical Retry/support/full safe reload. Success requires actual shared-revocation ACK; a 403,
+401, vanished cookie or changed identity alone is not logout completion.
+
+A stale login form discovering authenticated A navigates to tasks; do not replay credentials.
+Task commands preserve original pending ID/payload and require explicit retry after valid saved
+tasks, with FD-001 intact. View-only remembering failure stays silent with no old-tuple replay;
+token refresh for a later explicit choice does not lock otherwise available task actions.
+Generic HTML/proxy 403 or lost response is not trusted rollback evidence. Never treat CSRF
+refresh as authority to expose data or bypass the saved-task load lock.
+
+Registration/login admission may return generic temporary 429 with Retry-After or 503 when the
+shared limiter cannot enforce admission. Preserve nonsecret fields, never echo passwords, and use
+existing retry guidance. Invalid credentials remain generic and no permanent account lock or
+credential recovery is offered. Existing valid task sessions are not invalidated by limiter outage.
 
 Support is reachable from load errors and auth screens. It provides a configured contact and
 nonsensitive reference, with no self-service task-data reset, password reset/recovery, or account

@@ -118,3 +118,49 @@ silent failure policy require fresh independent assessment. No new item is pre-c
 
 This Spec Kit Checklist rerun appended 16 requirements-quality questions. Markers remain the
 reviewer's responsibility; completion of author consistency checks is not their approval.
+
+## R2-Rev6 incorporation — targeted R3 handoff, 2026-10-24
+
+Independent R2-Rev6 §2 verified FD-006/007/008 and Q1 at written level; Barry approved §3.
+[Approval record](../../../independent-reviews/2_design-functional/Review_6/Taskify_R2-Rev6_Targeted_Functional_Design_Review_APPROVED.md).
+Prior questions/checkmarks stay historical and unchanged. These unchecked prompts track technical
+handoff completeness, not a reopened human Functional Design gate or an executed test suite.
+
+- [ ] CHK053 Does the operative contract protect the first browser-established usable login in both header orders, including same-account competitors, without accepting conflict text as cookie-ordering proof? [FD-007; HTTP; R2-6R-T01/02/04]
+- [ ] CHK054 Are R2-NAV-001 GET/POST redirects distinguished from anonymous competition, with S2 limited to distinct valid post-revocation login and no replacement of a newer established login? [FR-010; R2-6R-T03/13/16]
+- [ ] CHK055 Are prompt same-profile logout notification/clear/login navigation and confirmed revocation distinct from tab ACKs, suspended rendering and unknown outcomes? [FD-008; R2-6R-T05/15]
+- [ ] CHK056 Do notification loss/suspension/history and delayed old-login notifications preserve concealment, current-login authority and independent devices? [FD-008; R2-6R-T06/11/12]
+- [ ] CHK057 Is current authentication/account/epoch checked after private data arrival and before new reveal, with mismatch discard, uncertainty concealment and no pre-dispatch-only proof? [FD-006; R2-6R-T07/08]
+- [ ] CHK058 Are all accepted Q1 entries gated without per-keystroke checks or cross-login intent replay? [Q1; R2-6R-T09/13]
+- [ ] CHK059 Are ordinary task-refresh stale rows, FD-001 all-write/retry locks, silent view isolation and FD-003/004 preserved separately from authority uncertainty? [FR-008/009/012/014; R2-6R-T10/14]
+- [ ] CHK060 Are exact human/independent R2 authorities, preserved Scope/history, R3 proof gaps and paused P1 visible without selecting an architecture or granting Tasks/Analyze/Build? [R2-Rev6 §2–4; R3 handoff]
+
+## R2-Rev8 incorporation — current targeted R3 handoff, 2026-10-25
+
+Scope v1.2 / AM-002 and [R2-Rev8 §4](../../../independent-reviews/2_design-functional/Review_8/Taskify_R2-Rev8_Targeted_Functional_Design_Review_APPROVED.md)
+are approved; FD-009 RESOLVED_VERIFIED per §2. R2-Rev7 NOT_READY and earlier checklist text/markers
+remain historical. CHK053–060's first-winner, fresh-interaction/after-arrival and delivery readings
+are superseded where inconsistent with CA-006/007/008. Do not treat them as current obligations.
+The following unchecked prompts track technical handoff; no independent R3/runtime pass is claimed.
+
+- [ ] CHK061 Are authenticated GET/POST/stale forms distinguished from genuine anonymous cookie races, without first-winner or required competitor-conflict guarantees? [CA-007; CA-T01–04; R2-NAV-001]
+- [ ] CHK062 Do server authentication/owner/intended-login guards forbid cross-account access/effects and old-intent rebinding, including same-account new epoch? [FR-010/AC-010; CA-T05]
+- [ ] CHK063 Are known stale/mismatched replies discarded and observed auth changes cleared, with appropriate lifecycle/uncertainty revalidation and no needless per-local-interaction probe or atomic rendering? [CA-006/Q1; CA-T06–09]
+- [ ] CHK064 Is the approved prior-authorised display/in-flight residual explicit, with no maximum delay and no extension to known-stale/API/rebinding/post-observation violations? [AM-002/RA-FD006-001; CA-T07]
+- [ ] CHK065 Are confirmed intended logout, prompt dispatch/receiving-tab clear/navigation, non-guaranteed delivery and safe loss/late/newer-login recovery distinguished? [CA-008; CA-T10–13]
+- [ ] CHK066 Are FD-001, receipts/versions, silent view isolation, independent sessions, native security and FD-003/004 preserved? [CA-T09/14–16]
+- [ ] CHK067 Are FD-009's source disposition, R2-Rev8 human gate and preserved R2-Rev7 history distinct from still-open TD-008/010/011? [R2-Rev8 §2/4; R3 handoff]
+- [ ] CHK068 Does R3 requalify retained mechanisms proportionately without reinserting removed guarantees, adding a browser dependency or demanding premature runtime proof? [Review Remediation Policy; current R3 handoff]
+
+## R3-Rev10 technical candidate — independent assessment pending
+
+These prompts do not mark a runtime or independent pass. Scope/R2 and historical checklist rows
+remain unchanged. See [design](../auth-transition-protocol.md) and
+[coverage](../review-followups/r3-rev10-validation.md).
+
+- [ ] CHK069 Does the native Session guard reauthenticate and enforce intended epoch before owner/receipt/task/view access, with Session → task-domain order held through command/logout commit? [TD-008; CA-T05/15]
+- [ ] CHK070 Are final login Session persistence and response-time cookie issuance separated safely, with no non-login auth-cookie set/delete or post-guard Session re-save? [TD-008; R10-X01/03]
+- [ ] CHK071 Does logout receipt recovery prove exact committed revocation without token-only live revocation, false absence ACK or newer-login effects, including restore/cleanup? [TD-008; CA-T10/13; R3-V06]
+- [ ] CHK072 Do generation/known-state checks and concealed lifecycle recovery preserve AC-010 without reinstating atomic rendering or per-response probes? [TD-010; CA-T06–09]
+- [ ] CHK073 Are confirmed-event dispatch and receiving-tab clearing prompt while loss/unsupported/suspension recovery has no delivery guarantee or new capability dependency? [TD-011; CA-T11–13]
+- [ ] CHK074 Are all CA-T01–16 and retained prior fixtures traced, with native view continuity, FD-001/003/004 and TD-006/007 exits preserved? [R3-Rev10 validation]
